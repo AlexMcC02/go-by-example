@@ -2,20 +2,32 @@ package main
 
 import (
 	"fmt"
-	"math"
 )
 
-const s string = "constant"
-
 func main() {
-	fmt.Println(s)
+	i := 1
+	for i <= 3 { // Simple for loop with a single condition (this would be a while loop in other languages).
+		fmt.Println(i)
+		i = i + 1
+	}
 
-	const n = 500000000
+	for j := 0; j < 3; j++ { // The classic initial;condition;after for loop.
+		fmt.Println(j)
+	}
 
-	const d = 3e20 / n
-	fmt.Println(d)
+	for i := range 3 {
+		fmt.Println("range", i) // Accomplishes the same as the above, as i's default value will be 0.
+	}
 
-	fmt.Println(int64(d)) // A numeric constant has no type until it's given one, such as when converted explicitly.
+	for { // Will loop endlessly until broken (again, much like a While true statement).
+		fmt.Println("loop")
+		break
+	}
 
-	fmt.Println(math.Sin(n)) // The numeric const n is assigned the float64 type as it is required by the Sin function.
+	for n := range 6 {
+		if n%2 == 0 {
+			continue // You can use the continue keyboard to move to the next iteration of the loop.
+		}
+		fmt.Println(n)
+	}
 }
