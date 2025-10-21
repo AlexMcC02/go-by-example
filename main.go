@@ -1,20 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
+
+const s string = "constant"
 
 func main() {
-	var a = "initial"
-	fmt.Println(a)
+	fmt.Println(s)
 
-	var b, c int = 1, 2
-	fmt.Println(b, c)
+	const n = 500000000
 
-	var d = true 
+	const d = 3e20 / n
 	fmt.Println(d)
 
-	var e int
-	fmt.Println(e)
+	fmt.Println(int64(d)) // A numeric constant has no type until it's given one, such as when converted explicitly.
 
-	f := "apple" // same as var f string = "apple" (inside functions only)
-	fmt.Println(f)
+	fmt.Println(math.Sin(n)) // The numeric const n is assigned the float64 type as it is required by the Sin function.
 }
