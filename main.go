@@ -2,27 +2,39 @@ package main
 
 import "fmt"
 
-func fact(n int) int { // This function will call itself until it reaches the base case of fact(0).
-	if n == 0 {
-		return 1
-	}
-	return n * fact(n-1)
-}
-
 func main() {
-	fmt.Println(fact(5))
+	nums := []int{2, 3, 4}
+	sum := 0
 
-	// Anonymous functions can also be recursive, but you must explicitly declare a variable with var
-	// to store the function before it's defined.
-	var fib func(n int) int 
+	// Range iterates over elements in a variety of built-in data structures.
 
-	fib = func(n int) int {
-		if n < 2 {
-			return n
+	for _, num := range nums { // Range is used here to summate the elements in a slice.
+		sum += num
+	}
+	fmt.Println("sum:", sum)
+
+	// Note, using range will provide BOTH the index and value.
+	// You will often see one of these discarded, as is exemplified below.
+	for i, num := range nums { 
+		if num == 3 {
+			fmt.Println("index:", i)
 		}
-
-		return fib(n-1) + fib(n-2)
 	}
 
-	fmt.Println(fib(7))
+	// Range on a map will iterate over the key-value pairs.
+	kvs := map[string]string{"a": "apple", "b": "banana"}
+	for k, v := range kvs {
+		fmt.Printf("%s -> %s\n", k, v)
+	}
+
+	// Though it can also just iterate over the keys.
+	for k := range kvs {
+		fmt.Println("key:", k)
+	}
+
+	// Using range on strings iterates over Unicode code points.
+	// The first value is the starting byte index of the ruie and the second the rune itself.
+	for i, c := range "go" {
+		fmt.Println(i, c)
+	}
 }
