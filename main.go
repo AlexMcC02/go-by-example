@@ -2,17 +2,22 @@ package main
 
 import "fmt"
 
-func vals() (int, int) { // This function returns two integer values.
-	return 3, 7
+// Variadic functions can be called with any number of trailing arguments, such as Println().
+
+func sum(nums ...int) { // This function will take an arbitrary number of ints as arguments.
+	fmt.Print(nums, " ")
+	total := 0
+
+	for _, num := range nums { // Within the function, the type of nums is equivalent to an []int.
+		total += num
+	}
+	fmt.Println(total)
 }
 
-// Handling multiple returns is common in Go, with many functions returning a result and error value.
-
 func main() {
-	a, b := vals() // Multiple assignments work well with functions returning multiple values.
-	fmt.Println(a)
-	fmt.Println(b)
+	sum(1 ,2)
+	sum(1, 2, 3)
 
-	_, c := vals() // If we only want one of the values, we can opt to discard a value with _.
-	fmt.Println(c)
+	nums := []int{1, 2, 3, 4}
+	sum(nums...) // You can pass a slice to a variadic function like this.
 }
