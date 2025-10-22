@@ -2,50 +2,38 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 func main() { 
-	i := 2
-	fmt.Print("Write ", i, " as " )
-	switch i { // There is no need to add a break to the end of a switch case.
-	case 1:
-		fmt.Println("one")
-	case 2:
-		fmt.Println("two")
-	case 3:
-		fmt.Println("three")
-	}
-	
-	switch time.Now().Weekday() {
-	case time.Saturday, time.Sunday: // Commas can be used to separate multiple expressions in the same case.
-		fmt.Println("It's the weekend")
-	default:
-		fmt.Println("It's a weekday")
-	}
+	var a [5]int
+	fmt.Println("emp:", a) // Zero valued by default [0 0 0 0 0].
 
-	t := time.Now()
-	switch {
-	case t.Hour() < 12: // Conditional case.
-		fmt.Println("It's before noon")
-	default:
-		fmt.Println("It's after noon")
-	}
+	a[4] = 100 // Set the fifth value to be 100.
+	fmt.Println("set:", a)
+	fmt.Println("get:", a[4]) // Retrieve a specific element by its index.
 
-	// A type switch compares types instead of values. You can use this 
-	// to discover the type of an interface value.
-	whatAmI := func(i interface{}) { 
-		switch t := i.(type) {
-		case bool:
-			fmt.Println("I'm a bool")
-		case int:
-			fmt.Println("I'm an int")
-		default:
-			fmt.Printf("Don't know type %T\n", t)
+	fmt.Println("len:", len(a)) // Return the length of the array.
+
+	b := [5]int{1, 2, 3, 4, 5} // One line array initialisation and declaration.
+	fmt.Println("dcl:", b)
+
+	b = [...]int{1, 2, 3, 4, 5} // Using [...] will have the compiler apply an appropriate length for you.
+	fmt.Println("dcl:", b)
+
+	b = [...]int{100, 3: 400, 500} // You can use the : symbol to specify a starting index.
+	fmt.Println("idx:", b)
+
+	var twoD [2][3]int // You can compose types to build multi-dimensional data structures.
+	for i := range 2 {
+		for j := range 3 {
+			twoD[i][j] = i + j
 		}
 	}
+	fmt.Println("2d:", twoD)
 
-	whatAmI(true)
-	whatAmI(1)
-	whatAmI("hey")
+	twoD = [2][3]int { // Initialising a multi-dimensional array.
+		{1, 2, 3},
+		{4, 5 ,6},
+	}
+	fmt.Println("2d:", twoD)
 }
