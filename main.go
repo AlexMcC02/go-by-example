@@ -1,21 +1,18 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
-func plus(a int, b int) int { // Return type after the parameters.
-	return a + b // Explicit turns, hallejulah.
+func vals() (int, int) { // This function returns two integer values.
+	return 3, 7
 }
 
-func plusPlus(a, b, c int) int { // Declare the type of multiple parameters like this. Very cool!
-	return a + b + c
-}
+// Handling multiple returns is common in Go, with many functions returning a result and error value.
 
-func main() { 
-	res := plus(1, 2)
-	fmt.Println("1+2 =", res)
-	
-	res = plusPlus(1, 2, 3)
-	fmt.Println("1+2+3 =", res)
+func main() {
+	a, b := vals() // Multiple assignments work well with functions returning multiple values.
+	fmt.Println(a)
+	fmt.Println(b)
+
+	_, c := vals() // If we only want one of the values, we can opt to discard a value with _.
+	fmt.Println(c)
 }
