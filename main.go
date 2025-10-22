@@ -2,39 +2,35 @@ package main
 
 import "fmt"
 
+// This function passes by value, meaning it will get a copy of ival distinct from the one 
+// in the calling function. As it does not return the value, the value passed in from the
+// scope where the function is called will remain the same.
+func zeroval(ival int) { 
+	ival = 0
+}
+
+// Unlike the above function, this one specifies a *int parameter. This is an int pointer.
+// The *iptr code will dereference the pointer from its memory address to the current value 
+// at the address. Assigning a value to the dereferenced point changes the value at the
+// referenced address.
+
+// Simply put, this function, despite not returning anything, will be able to modify the
+// value the pointer references.
+func zeroptr(iptr *int) {
+	*iptr = 0
+}
+
 func main() {
-	nums := []int{2, 3, 4}
-	sum := 0
+	i := 1
+	fmt.Println("initial:", i)
 
-	// Range iterates over elements in a variety of built-in data structures.
+	// Zeroval does not change the i defined here, but zeroptr does as it has a reference to the
+	// memory address for that variable.
+	zeroval(i)
+	fmt.Println("zeroval", i)
 
-	for _, num := range nums { // Range is used here to summate the elements in a slice.
-		sum += num
-	}
-	fmt.Println("sum:", sum)
+	zeroptr(&i) // The ampersand means you are providing the memory adress of i (or a pointer to i).
+	fmt.Println("zeroptr", i)
 
-	// Note, using range will provide BOTH the index and value.
-	// You will often see one of these discarded, as is exemplified below.
-	for i, num := range nums { 
-		if num == 3 {
-			fmt.Println("index:", i)
-		}
-	}
-
-	// Range on a map will iterate over the key-value pairs.
-	kvs := map[string]string{"a": "apple", "b": "banana"}
-	for k, v := range kvs {
-		fmt.Printf("%s -> %s\n", k, v)
-	}
-
-	// Though it can also just iterate over the keys.
-	for k := range kvs {
-		fmt.Println("key:", k)
-	}
-
-	// Using range on strings iterates over Unicode code points.
-	// The first value is the starting byte index of the ruie and the second the rune itself.
-	for i, c := range "go" {
-		fmt.Println(i, c)
-	}
+	fmt.Println("pointer", &i)
 }
