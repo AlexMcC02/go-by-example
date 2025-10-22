@@ -2,22 +2,32 @@ package main
 
 import "fmt"
 
-// Variadic functions can be called with any number of trailing arguments, such as Println().
+// Go supports anonymous functions, which can form closures. These are useful when you want to define an
+// inline function without having to name it.
 
-func sum(nums ...int) { // This function will take an arbitrary number of ints as arguments.
-	fmt.Print(nums, " ")
-	total := 0
+// A closure retains the state of the variables accessed from its surrounding scope (i.e. the function the closure)
+// is nested inside.
 
-	for _, num := range nums { // Within the function, the type of nums is equivalent to an []int.
-		total += num
+// This function returns another function, which we define anonymously in the body of intSeq.
+// The returned function closes over the variable i to form a closure.
+func intSeq() func() int { 
+	i := 0
+	return func() int {
+		i++
+		return i
 	}
-	fmt.Println(total)
 }
 
 func main() {
-	sum(1 ,2)
-	sum(1, 2, 3)
+	nextInt := intSeq()
 
-	nums := []int{1, 2, 3, 4}
-	sum(nums...) // You can pass a slice to a variadic function like this.
+	// Each time intSeq is called, we assign it to nextInt. Because the function value captures 
+	// its own i value, it wil be updated each time we call nextInt.
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+
+	// If we create a new variable and assign intSeq to it, we get a unique, unrelated value.
+	newInts := intSeq()
+	fmt.Println(newInts())
 }
