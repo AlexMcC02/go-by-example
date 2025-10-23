@@ -2,54 +2,48 @@ package main
 
 import "fmt"
 
-// An enumerated type has a fixed number of possible values, each with distinct names.
-// Go does not have a distinct enum type, but they can be implemented using existing language idioms.
 
-// The ServerState type is an int under the hood.
-type ServerState int
-
-// The possible values are defined as constants. The keyword iota generates successive constant values
-// automatically -- 0, 1, 2, 3.
-const (
-	StateIdle ServerState = iota
-	StateConnected
-	StateError
-	StateRetrying
-)
-
-// Here we implement the fmt.Stringer interface, allowing us to output values of ServerState as strings.
-var stateName = map[ServerState]string {
-	StateIdle: "idle",
-	StateConnected: "connected",
-	StateError: "error",
-	StateRetrying: "retrying",
+// Go supports embedding of structs and interfaces to express a seamless composition of types.
+type base struct {
+	num int
 }
 
-func (ss ServerState) String() string {
-	return stateName[ss]
+func (b base) describe() string {
+	return fmt.Sprintf("base with num=%v", b.num)
 }
 
-// Though ServerState is implemented as an int, passing an int to transition will result in a type
-// mismatch, providing some degree of compile-time type safety for enums.
+// The container embeds a base. 
+type container struct {
+	base // An embedding looks like a field without a name.
+	str string
+}
+
+// When creating structs with literals, we need to initialise the embedding explicitly, here the
+// embedded type servers as the field name.
 func main() {
-	ns := transition(StateIdle)
-	fmt.Println(ns)
-
-	ns2 := transition(ns)
-	fmt.Println(ns2)
-}
-
-// This function emulates a state transition for a web server, it takes the existing state 
-// and returns a new state.
-func transition(s ServerState) ServerState {
-	switch s {
-	case StateIdle:
-		return StateConnected
-	case StateConnected, StateRetrying:
-		return StateIdle
-	case StateError:
-		return StateError
-	default:
-		panic(fmt.Errorf("unkwown state: %s", s))
+	co := container {
+		base: base {
+			num: 1,
+		},
+		str: "some name",
 	}
+
+	// We can access the base's fields directly on co, without needing to specify its parent.
+	fmt.Printf("co={num: %v, str: %v}\n", co.num, co.str)
+
+	// Or, we can spell out the full path using the embedded type's name.
+	fmt.Println("also num:", co.base.num)
+
+	// Since contianer embeds base, the methods of base also become methods of a container.
+	fmt.Println("describe", co.describe())
+
+	// Embedding structs with methods may be used to bestow interface implementations onto other
+	// structs. Here we see that a container now implements the describer interface because it itself
+	// embeds base.
+	type describer interface {
+		describe() string
+	}
+
+	var d describer = co
+	fmt.Println("describer:", d.describe())
 }
