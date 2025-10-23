@@ -1,58 +1,52 @@
 package main
 
-import (
-	"fmt"
-	"unicode/utf8"
-)
+import "fmt"
 
-func main() {
-	// A Go string is read-only sequence of bytes.
-	// The language and standard library treat strings as containers of text encoded in UTF-8.
-	// In other languages, strings are made of "characters".
-	// In Go, the concept of a character is called a Rune, an integer that represents a Unicode code point.
-
-	// S is a string assigned a literal value representing the word "hello" in the Thai language.
-	// Go string literals are UTF-8 encoded text.
-	const s = "สวัสดี"
-
-	// Because strings are equivalent to []byte, this statement will produce the length of the 
-	// raw bytes stored within.
-	fmt.Println("Len:", len(s))
-
-	// Indexing a string produces the raw byte values at each index. This loop will output the
-	// hexidecimal values of all the bytes that constitute the code points in s.
-	for i := range len(s) {
-		fmt.Printf("%x", s[i])
-	}
-	fmt.Println()
-
-	// To count the number of runes in as tring, we use the utf8 package. Because some Thai characters
-	// are represented by UTF-8 code points that can span multiple bytes, the result of this count may
-	// be larger than you expected.
-	fmt.Println("Rune count:", utf8.RuneCountInString(s))
-
-	// A range loop handles strings in a special way, decoding each rune with its offset in the string.
-	for idx, runeValue := range s {
-		fmt.Printf("%#U starts at %d\n", runeValue, idx)
-	}
-
-	// The same results can be achieved using the utf8.DecodeRuneInString function.
-	fmt.Println("\nUsing DecodeRuneInString")
-	for i, w := 0, 0; i < len(s); i += w {
-		runeValue, width := utf8.DecodeLastRuneInString(s[i:])
-		fmt.Printf("%#U starts at %d\n", runeValue, i)
-		w = width
-
-		// Passing a rune to a function.
-		examineRune(runeValue)
-	}
+// Initialising a person struct with name and age fields.
+type person struct {
+	name string
+	age int
 }
 
-// Values enclosed in single quotes are rune literals. We can compare a rune value to a rune literal directly.
-func examineRune(r rune) {
-	if r == 't' {
-		fmt.Println("found tee")
-	} else if r == 'ส' {
-		fmt.Println("found so sua")
+// This function constructs a new person with a given name.
+func newPerson(name string) *person {
+	p := person{name: name}
+	p.age = 42
+
+	// Because go uses garbage collection, it is safe to return a pointer to a local variable.
+	// It will only be cleaned up by the gc when there are no active references to it.
+	return &p 
+}
+
+func main() {
+	fmt.Println(person{"Bob", 20}) // Creating a new struct in-line.
+
+	fmt.Println(person{name: "Alice", age: 30}) // You can specify the fields directly.
+
+	fmt.Println(person{name: "Fred"}) // Omitted fields are zero-valued.
+
+	// Remember that an ampersand yields a pointer, in this case to the struct.
+	fmt.Println(&person{name: "Ann", age: 40}) 
+
+	// It is considered idiomatic to encapsulate new struct creation in constructor functions
+	// just like those used in more traditional OOP languages.
+	fmt.Println(newPerson("Jon"))
+
+	s := person{name: "Sean", age: 50}
+	fmt.Println(s.name) // Dot syntax used to access fields.
+
+	sp := &s
+	fmt.Println(sp.age) // Dots can be used with struct pointers, the pointers are dereferenced automatically.
+
+	sp.age = 51 // Structs are mutable.
+	fmt.Println(sp.age)
+
+	dog := struct { // Anonymous struct type. This is useful for table-driven tests.
+		name string
+		isGood bool
+	}{
+		"Rex",
+		true,
 	}
+	fmt.Println(dog)
 }
