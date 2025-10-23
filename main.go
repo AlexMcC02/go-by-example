@@ -2,48 +2,59 @@ package main
 
 import "fmt"
 
-
-// Go supports embedding of structs and interfaces to express a seamless composition of types.
-type base struct {
-	num int
+// SlicesIndex is an example of a generic function, with it taking a slice of any comparable
+// type and an element of that type and returns the index of the first ocurrence fo v in s, or
+// -1 if not present. Note: being comparable means you can apply the == and != operators.
+func SlicesIndex[S ~ []E, E comparable](s S, v E) int {
+	for i := range s {
+		if v == s[i] {
+			return i
+		}
+	}
+	return -1
 }
 
-func (b base) describe() string {
-	return fmt.Sprintf("base with num=%v", b.num)
+// List is an example of a generic type, it being a singly linked-list with values of any type.
+type List[T any] struct {
+	head, tail *element[T]
+}
+type element[T any] struct {
+	next *element[T]
+	val T
 }
 
-// The container embeds a base. 
-type container struct {
-	base // An embedding looks like a field without a name.
-	str string
+// We can define methods on generic types but we must keep the type parameters in place.
+// E.g. the type is List[T] not List.
+func (lst *List[T]) Push(v T) {
+	if lst.tail == nil {
+		lst.head = &element[T]{val: v}
+		lst.tail = lst.head
+	} else {
+		lst.tail.next = &element[T]{val: v}
+		lst.tail = lst.tail.next
+	}
 }
 
-// When creating structs with literals, we need to initialise the embedding explicitly, here the
-// embedded type servers as the field name.
+// AllElements returns all the List elements as a slice.
+func (lst *List[T]) AllElements() []T {
+	var elems []T
+	for e := lst.head; e != nil; e = e.next {
+		elems = append(elems, e.val)
+	}
+	return elems
+}
+
+// When invoking generic functions, we can often rely on type inference.
 func main() {
-	co := container {
-		base: base {
-			num: 1,
-		},
-		str: "some name",
-	}
+	var s = []string{"foo", "bar", "zoo"}
 
-	// We can access the base's fields directly on co, without needing to specify its parent.
-	fmt.Printf("co={num: %v, str: %v}\n", co.num, co.str)
+	fmt.Println("index of zoo:", SlicesIndex(s, "zoo"))
 
-	// Or, we can spell out the full path using the embedded type's name.
-	fmt.Println("also num:", co.base.num)
-
-	// Since contianer embeds base, the methods of base also become methods of a container.
-	fmt.Println("describe", co.describe())
-
-	// Embedding structs with methods may be used to bestow interface implementations onto other
-	// structs. Here we see that a container now implements the describer interface because it itself
-	// embeds base.
-	type describer interface {
-		describe() string
-	}
-
-	var d describer = co
-	fmt.Println("describer:", d.describe())
+	_ = SlicesIndex(s, "zoo")
+	
+	lst := List[int]{}
+	lst.Push(10)
+	lst.Push(13)
+	lst.Push(23)
+	fmt.Println("list:", lst.AllElements())
 }
