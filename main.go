@@ -1,52 +1,66 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
-// Initialising a person struct with name and age fields.
-type person struct {
-	name string
-	age int
+// Interfaces are named collections of method signatures.
+type geometry interface {
+	area() float64
+	perim() float64
 }
 
-// This function constructs a new person with a given name.
-func newPerson(name string) *person {
-	p := person{name: name}
-	p.age = 42
+type rect struct {
+	width, height float64
+}
 
-	// Because go uses garbage collection, it is safe to return a pointer to a local variable.
-	// It will only be cleaned up by the gc when there are no active references to it.
-	return &p 
+type circle struct {
+	radius float64
+}
+
+// To implement an interface in Go, you implement all the methods in the interface.
+func (r rect) area() float64 {
+	return r.width * r.height
+}
+
+func (r rect) perim() float64 {
+	return 2*r.width + 2*r.height
+}
+
+func (c circle) area() float64 {
+	return math.Pi * c.radius * c.radius
+}
+
+func (c circle) perim() float64 {
+	return 2 * math.Pi * c.radius
+}
+
+// If a variable has an interface type, we can call methods that are in the named interface.
+// This function is a generic and will work on any geometry.
+func measure(g geometry) {
+	fmt.Println(g)
+	fmt.Println(g.area())
+	fmt.Println(g.perim())
+}
+
+// It can be useful to know the runtime type of an interface value.
+// One option is using a type assertion, as shown here, or a type switch.
+func detectCircle(g geometry) {
+	if c, ok := g.(circle); ok {
+		fmt.Println("circle with radius", c.radius)
+	}
 }
 
 func main() {
-	fmt.Println(person{"Bob", 20}) // Creating a new struct in-line.
+	r := rect{width: 3, height: 4}
+	c := circle{radius: 5}
 
-	fmt.Println(person{name: "Alice", age: 30}) // You can specify the fields directly.
+	// The circle and rect struct types both implement the geomtry interface so we can use instances
+	// of these structs as arguments to measure.
+	measure(r)
+	measure(c)
 
-	fmt.Println(person{name: "Fred"}) // Omitted fields are zero-valued.
-
-	// Remember that an ampersand yields a pointer, in this case to the struct.
-	fmt.Println(&person{name: "Ann", age: 40}) 
-
-	// It is considered idiomatic to encapsulate new struct creation in constructor functions
-	// just like those used in more traditional OOP languages.
-	fmt.Println(newPerson("Jon"))
-
-	s := person{name: "Sean", age: 50}
-	fmt.Println(s.name) // Dot syntax used to access fields.
-
-	sp := &s
-	fmt.Println(sp.age) // Dots can be used with struct pointers, the pointers are dereferenced automatically.
-
-	sp.age = 51 // Structs are mutable.
-	fmt.Println(sp.age)
-
-	dog := struct { // Anonymous struct type. This is useful for table-driven tests.
-		name string
-		isGood bool
-	}{
-		"Rex",
-		true,
-	}
-	fmt.Println(dog)
+	detectCircle(r)
+	detectCircle(c)
 }
