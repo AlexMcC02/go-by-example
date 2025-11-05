@@ -1,25 +1,26 @@
 package main
 
-import (
-    "fmt"
-    "time"
-)
+import "fmt"
 
-// Channels can be used to synchronise execution across goroutines.
+// When providing channels as function parameters, you can specify if it should only send or receive values.
+// This specificity is intended to increase type safety.
 
-// In this function, the done channel will be used to notify another goroutine that this function's work is done.
-func worker(done chan bool) {
-    fmt.Print("working...")
-    time.Sleep(time.Second)
-    fmt.Println("done")
+// This function only accepts a channel for sending values. 
+// Attempting to receive on this channel will result in a compile time error.
+func ping(pings chan<- string, msg string) {
+    pings <- msg
+}
 
-    done <- true // Sending a value to notify that the function is done.
+// This function accepts one channel for receivers (pings) and a second for sends (pongs).
+func pong(pings <-chan string, pongs chan<- string) {
+    msg := <-pings
+    pongs <- msg
 }
 
 func main() {
-
-    done := make(chan bool, 1) // Starting a worker goroutine, giving it a channel to notify on.
-    go worker(done) 
-
-    <-done // Block until we receive a notification from the worker on the channel.
+    pings := make(chan string, 1)
+    pongs := make(chan string, 1)
+    ping(pings, "passed message")
+    pong(pings, pongs)
+    fmt.Println(<-pongs)
 }
