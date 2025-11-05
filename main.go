@@ -1,81 +1,60 @@
 package main
 
+// The idomatic way to communicate errors in Go is with an explicit, separate return type.
+// This may be quite strange if you're used to Python, Java, and Ruby, which make use of exceptions.
+// Go's approach is intended to make it easy to see which functions return errors and to handle them
+// using the same language constructs employed for other, non-error tasks.
+
 import (
 	"fmt"
-	"iter"
-	"slices"
+	"errors"
 )
 
-type List[T any] struct { // A singly linked-list, this time taking advantage of Go's iterators.
-	head, tail *element[T]
-}
-
-type element[T any] struct {
-	next *element[T]
-	val T
-}
-
-func (lst *List[T]) Push(v T) {
-	if lst.tail == nil {
-		lst.head = &element[T]{val: v}
-		lst.tail = lst.head
-	} else {
-		lst.tail.next = &element[T]{val :v}
-		lst.tail = lst.tail.next
+// By convention, errors are the last erturn value and have a type error, a built-in form of type inference.
+func f(arg int) (int, error) {
+	if arg == 42 {
+		return -1, errors.New("cant work with 42") // errors.New constructs a basic error value with the supplied message.
 	}
+	return arg + 3, nil // In this case, a return value of nil signals that there was no error.
 }
 
-// Reminder: an iterator provides a way to access and traverse and access the elements of a collection, 
-// one by one, without exposing the underlying data structure.
+// A sentinel error is a predeclared variable that is used to signify a specific error condition.
+var ErrOutOfTea = errors.New("no more tea available")
+var ErrPower = errors.New("can't boil water")
 
-// All returns an iterator, which in Go is a function with a special signature.
-// The iterator function takes another function as a parameter. By convention, this function is typically named yield.
-// The iterator will then call yield for every element we want to iterate over. 
-// You can take advantage of yield's return value for an early termination.
-func (lst *List[T]) All() iter.Seq[T] {
-	return func(yield func(T) bool) {
-		for e := lst.head; e != nil; e = e.next {
-			if !yield(e.val) {
-				return
-			}
-		}
+// We can wrap errors with higher-level errors to add context. The %w verb in fmt.Errorf can be used to achieve this.
+func makeTea(arg int) error {
+	if arg == 2 {
+		return ErrOutOfTea
+	} else if arg == 4 {
+		return fmt.Errorf("make tea: %w", ErrPower)
 	}
+	return nil
 }
 
-// This function generates fibonacci numbers, and it will keep running as long as yield returns true.
-func genFib() iter.Seq[int] {
-	return func(yield func(int) bool) {
-		a, b := 1, 1
-
-		for {
-			if !yield(a) {
-				return
-			}
-			a, b = b, a+b
-		}
-	}
-}
-
+// It's idiomatic to use an inline error check in the if line.
 func main() {
-	lst := List[int]{}
-	lst.Push(10)
-	lst.Push(13)
-	lst.Push(23)
-	
-	//List.All returns an interator, meaning it can be used in a regular range loop.
-	for e := range lst.All() {
-		fmt.Println(e)
+	for _, i := range []int{7, 42} {
+		if r, e := f(i); e != nil {
+			fmt.Println("f failed:", e)
+		} else {
+			fmt.Println("f worked:", r)
+		}
 	}
 
-	// The Slices package contains the Collect function, which will take any iterator and collects all its values into a slice.
-	all := slices.Collect(lst.All())
-	fmt.Println("all:", all)
-
-	// As soon as the loop hits break or early return, the yield function passed to the iterator will return false.
-	for n := range genFib() {
-		if n >= 10 {
-			break
+	// errors.Is checks that a given error matches a specific error value.
+	for i := range 5 {
+		if err := makeTea(i); err != nil {
+			if errors.Is(err, ErrOutOfTea) {
+				fmt.Println("We should buy never tea!")
+			} else if errors.Is(err, ErrPower) {
+				fmt.Println("Now it is dark.")
+			} else {
+				fmt.Printf("unknown error: %s\n", err)
+			}
+			continue
 		}
-		fmt.Println(n)
+		
+		fmt.Println("Tea is ready!")
 	}
 }
