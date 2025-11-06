@@ -2,45 +2,33 @@ package main
 
 import (
     "fmt"
+    "sync"
     "time"
 )
 
-// In this example, we implement a worker pool using goroutines and channels.
+// When waiting for multiple goroutines to finish, we can use a wait group.
 
-// This is the worker, of which there'll be several instances. Workers receive
-// work on the jobs channel and send the corresponding results on results. We'll
-// sleep a second per job to simulate an expensive task.
-func worker(id int, jobs <-chan int, results chan<- int) {
-    for j := range jobs {
-        fmt.Println("worker", id, "started  job", j)
-        time.Sleep(time.Second)
-        fmt.Println("worker", id, "finished job", j)
-        results <- j * 2
-    }
+func worker(id int) {
+    fmt.Printf("Worker %d starting\n", id)
+
+    time.Sleep(time.Second)
+    fmt.Printf("Worker %d done\n", id)
 }
 
 func main() {
 
-	// We'll make use of a jobs channel and a results channel to send work to the
-	// workers and collect their results.
-    const numJobs = 5
-    jobs := make(chan int, numJobs)
-    results := make(chan int, numJobs)
+	// This wait group is used to wait for all the goroutines launched here to finish.
+	// Note: if a wait group is explicitly passed into a function, a pointer should be used.
+    var wg sync.WaitGroup
 
-    for w := 1; w <= 3; w++ {
-        go worker(w, jobs, results)
+    for i := 1; i <= 5; i++ {
+        wg.Go(func() {
+            worker(i)
+        })
     }
 
-	// After all five jobs are sent, the channel is closed.
-    for j := 1; j <= numJobs; j++ {
-        jobs <- j
-    }
-    close(jobs)
+	// Here we use the wait group to block all goroutines until they're done.
+	// A goroutine is considered 'done' when the function it invokes returns.
+    wg.Wait()
 
-	// Finally, the results of the work are collected. This will also ensure that worker
-	// goroutines have finished. In the next example, we'll demonstrate a similar
-	// implementation using work groups.
-    for a := 1; a <= numJobs; a++ {
-        <-results
-    }
 }
