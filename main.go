@@ -5,32 +5,31 @@ import (
 	"time"
 )
 
-// Go's built-in timer feature allows the execution of code at some point in the future,
-// or repeatedly at some internval.
+// Tickers are useful for when you want to do something repeatedly at regular intervals.
 
 func main() {
 
-	// Timers represent a single point in the future. You specify both the amount of time
-	// and the channel that will be notified when the specified time elapses.
-	timer1 := time.NewTimer(2 * time.Second)
+	// Tickers use a similar mechanism to timers: a channel that is sent values.
+	// Here we'll use the select builtin on the channel to await values as they
+	// arrive every 500ms.
+	ticker := time.NewTicker(500 * time.Millisecond)
+	done := make(chan bool)
 
-	<-timer1.C
-	fmt.Println("Timer 1 fired")
-
-	timer2 := time.NewTimer(time.Second)
-	
-	// If you just need to wait, time.Sleep can be used. A timer may be useful in that
-	// you can cancel the timer before it fires.
 	go func() {
-		<-timer2.C
-		fmt.Println("Timer 2 fired")
+		for {
+			select {
+			case <-done:
+				return
+			case t := <-ticker.C:
+				fmt.Println("Tick at", t)
+			}
+		}
 	}()
 
-	stop2 := timer2.Stop()
-
-	if stop2 {
-		fmt.Println("Timer 2 stopped")
-	}
-
-	time.Sleep(2 * time.Second)
+	// Like timers, tickers can be stopped. When a ticker is stopped it won't receive
+	// any more values on its associated channel.
+	time.Sleep(1600 * time.Millisecond)
+	ticker.Stop()
+	done <- true
+	fmt.Println("Ticker stopped")
 }
