@@ -1,35 +1,46 @@
 package main
 
 import (
-	"fmt"
-	"time"
+    "fmt"
+    "time"
 )
 
-// Tickers are useful for when you want to do something repeatedly at regular intervals.
+// In this example, we implement a worker pool using goroutines and channels.
+
+// This is the worker, of which there'll be several instances. Workers receive
+// work on the jobs channel and send the corresponding results on results. We'll
+// sleep a second per job to simulate an expensive task.
+func worker(id int, jobs <-chan int, results chan<- int) {
+    for j := range jobs {
+        fmt.Println("worker", id, "started  job", j)
+        time.Sleep(time.Second)
+        fmt.Println("worker", id, "finished job", j)
+        results <- j * 2
+    }
+}
 
 func main() {
 
-	// Tickers use a similar mechanism to timers: a channel that is sent values.
-	// Here we'll use the select builtin on the channel to await values as they
-	// arrive every 500ms.
-	ticker := time.NewTicker(500 * time.Millisecond)
-	done := make(chan bool)
+	// We'll make use of a jobs channel and a results channel to send work to the
+	// workers and collect their results.
+    const numJobs = 5
+    jobs := make(chan int, numJobs)
+    results := make(chan int, numJobs)
 
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case t := <-ticker.C:
-				fmt.Println("Tick at", t)
-			}
-		}
-	}()
+    for w := 1; w <= 3; w++ {
+        go worker(w, jobs, results)
+    }
 
-	// Like timers, tickers can be stopped. When a ticker is stopped it won't receive
-	// any more values on its associated channel.
-	time.Sleep(1600 * time.Millisecond)
-	ticker.Stop()
-	done <- true
-	fmt.Println("Ticker stopped")
+	// After all five jobs are sent, the channel is closed.
+    for j := 1; j <= numJobs; j++ {
+        jobs <- j
+    }
+    close(jobs)
+
+	// Finally, the results of the work are collected. This will also ensure that worker
+	// goroutines have finished. In the next example, we'll demonstrate a similar
+	// implementation using work groups.
+    for a := 1; a <= numJobs; a++ {
+        <-results
+    }
 }
