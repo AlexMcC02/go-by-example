@@ -1,43 +1,43 @@
 package main
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
-// A timeout is the amount of a time a program will wait for the completion of a certain event.
+// Standard send and receive operations on channels are blocking.
+// Select, when used with a default clause, can implement non-blocking
+// sends, receives, multi-way selects.
 
 func main() {
+	messages := make(chan string)
+	signals := make(chan bool)
 
-	// Note that the channel here is buffered, meaning the send is non-blocking.
-	// This is deliberate, and can prevent goroutine leaks if the channel is not read.
-	c1 := make(chan string, 1)
-	go func() {
-		time.Sleep(2 * time.Second)
-		c1 <- "result 1"
-	}()
-
-	// This select implements a timeout, with the first case awaiting the result
-	// and the second implements the timeout, which is one second here.
+	// This is an example of a non-blocking receive.
+	// If a value is available on the messages channel, select will take the appropriate case
+	// otherwise, it will take the default case. This means something will always be returned.
 	select {
-	case res := <-c1:
-		fmt.Println(res)
-	case <-time.After(1 * time.Second):
-		fmt.Println("timeout 1")
+	case msg := <-messages:
+		fmt.Println("received message", msg)
+	default:
+		fmt.Println("no message received")
 	}
 
-	// Here we simulate c2 receiving its result in 2 seconds, with a timeout of 3 seconds.
-	// Thus, it will succeed and print the result.
-	c2 := make(chan string, 1)
-	go func() {
-		time.Sleep(2 * time.Second)
-		c2 <- "result 2"
-	}()
-
+	// A non-blocking send is similar. msg cannot be sent to the messages cahannel, as it
+	// has no buffer and there's no receiver. The default case will be selected.
+	msg := "hi"
 	select {
-	case res := <-c2:
-		fmt.Println(res)
-	case <-time.After(3 * time.Second):
-		fmt.Println("timeout 2")
+	case messages <- msg:
+		fmt.Println("sent message", msg)
+	default:
+		fmt.Println("no message sent")
+	}
+
+	// Multiple cases above the default case can be used to implement multi-way, 
+	// non-blocking select.
+	select {
+	case msg := <-messages:
+		fmt.Println("received message", msg)
+	case sig := <-signals:
+		fmt.Println("received signal", sig)
+	default:
+		fmt.Println("no activity")
 	}
 }
