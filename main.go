@@ -5,30 +5,39 @@ import (
 	"time"
 )
 
-// Select allows you to combine goroutines and channels, it allows you to wait on multi-channel operations.
+// A timeout is the amount of a time a program will wait for the completion of a certain event.
 
 func main() {
-	c1 := make(chan string) // The two channels we will be selecting across.
-	c2 := make(chan string)
 
-	// Each channel will receive a value after some amount of time (simulating server-side operations).
-	go func() {
-		time.Sleep(1 * time.Second)
-		c1 <- "one"
-	}()
-
+	// Note that the channel here is buffered, meaning the send is non-blocking.
+	// This is deliberate, and can prevent goroutine leaks if the channel is not read.
+	c1 := make(chan string, 1)
 	go func() {
 		time.Sleep(2 * time.Second)
-		c2 <- "two"
+		c1 <- "result 1"
 	}()
 
-	// Select is used here to await for both of these values simultaneously, printing each one as it arrives.
-	for range 2 {
-		select {
-		case msg1 := <-c1:
-			fmt.Println("received:", msg1)
-		case msg2 := <-c2:
-			fmt.Println("received", msg2)
-		}
+	// This select implements a timeout, with the first case awaiting the result
+	// and the second implements the timeout, which is one second here.
+	select {
+	case res := <-c1:
+		fmt.Println(res)
+	case <-time.After(1 * time.Second):
+		fmt.Println("timeout 1")
+	}
+
+	// Here we simulate c2 receiving its result in 2 seconds, with a timeout of 3 seconds.
+	// Thus, it will succeed and print the result.
+	c2 := make(chan string, 1)
+	go func() {
+		time.Sleep(2 * time.Second)
+		c2 <- "result 2"
+	}()
+
+	select {
+	case res := <-c2:
+		fmt.Println(res)
+	case <-time.After(3 * time.Second):
+		fmt.Println("timeout 2")
 	}
 }
