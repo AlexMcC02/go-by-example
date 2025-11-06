@@ -1,26 +1,34 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-// When providing channels as function parameters, you can specify if it should only send or receive values.
-// This specificity is intended to increase type safety.
-
-// This function only accepts a channel for sending values. 
-// Attempting to receive on this channel will result in a compile time error.
-func ping(pings chan<- string, msg string) {
-    pings <- msg
-}
-
-// This function accepts one channel for receivers (pings) and a second for sends (pongs).
-func pong(pings <-chan string, pongs chan<- string) {
-    msg := <-pings
-    pongs <- msg
-}
+// Select allows you to combine goroutines and channels, it allows you to wait on multi-channel operations.
 
 func main() {
-    pings := make(chan string, 1)
-    pongs := make(chan string, 1)
-    ping(pings, "passed message")
-    pong(pings, pongs)
-    fmt.Println(<-pongs)
+	c1 := make(chan string) // The two channels we will be selecting across.
+	c2 := make(chan string)
+
+	// Each channel will receive a value after some amount of time (simulating server-side operations).
+	go func() {
+		time.Sleep(1 * time.Second)
+		c1 <- "one"
+	}()
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		c2 <- "two"
+	}()
+
+	// Select is used here to await for both of these values simultaneously, printing each one as it arrives.
+	for range 2 {
+		select {
+		case msg1 := <-c1:
+			fmt.Println("received:", msg1)
+		case msg2 := <-c2:
+			fmt.Println("received", msg2)
+		}
+	}
 }
