@@ -1,24 +1,36 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-// Prior examples have made use of for and range to provide iteration over basic data structures.
-// The same syntax can be used to iterate over values received from a channel.
+// Go's built-in timer feature allows the execution of code at some point in the future,
+// or repeatedly at some internval.
 
 func main() {
 
-    queue := make(chan string, 2)
-    queue <- "one"
-    queue <- "two"
-    close(queue)
+	// Timers represent a single point in the future. You specify both the amount of time
+	// and the channel that will be notified when the specified time elapses.
+	timer1 := time.NewTimer(2 * time.Second)
 
-	// This range iterates over each element as it's received from the queue channel.
-	// Because the above channel has been closed, the iteration will terminate after
-	// receiving the 2 elements.
-    for elem := range queue {
-        fmt.Println(elem)
-    }
+	<-timer1.C
+	fmt.Println("Timer 1 fired")
 
-	// As you can see, it's possible to a close a non-empty channel but still have the
-	// remaining values be received.
+	timer2 := time.NewTimer(time.Second)
+	
+	// If you just need to wait, time.Sleep can be used. A timer may be useful in that
+	// you can cancel the timer before it fires.
+	go func() {
+		<-timer2.C
+		fmt.Println("Timer 2 fired")
+	}()
+
+	stop2 := timer2.Stop()
+
+	if stop2 {
+		fmt.Println("Timer 2 stopped")
+	}
+
+	time.Sleep(2 * time.Second)
 }
