@@ -1,36 +1,56 @@
 package main
 
 import (
-    "fmt"
-    "sync"
-    "sync/atomic"
+	"fmt"
+	"sync"
 )
 
-// Communication over channels is the primary means of state management. This was demonstrated with
-// worker pools. Another means to achieve this is through atomic counters.
+// To manage complex state changes, we can use a mutex to safely access data across multiple goroutines.
 
+// Container holds a map of counters. Because we want to update it concurrently from multiple goroutines
+// a mutex is added to synchronise access. 
+// Note: mutexes must not be copied, thus if a struct containing one is passed around it, it must be done
+// with a pointer.
+type Container struct {
+	mu sync.Mutex
+	counters map [string]int
+}
+
+// Here we lock a mutex before accessing counters. The defer statement will then unlock it.
+func (c *Container) inc(name string) {
+	c.mu.Lock()
+	defer c.mu.Unlock() // Defer ensures a function call is performed later in a program's execution.
+	c.counters[name]++
+}
+
+// Note: a mutex's zero value can be used as-is, and doesn't require explicit initialisation.
 func main() {
+	c := Container {
+		counters: map[string]int{"a":0, "b": 0},
+	}
 
-	// Declaring an atomic integer type.
-    var ops atomic.Uint64
+	var wg sync.WaitGroup
 
-	// This wait group will help us wait for all goroutines to finish their work.
-    var wg sync.WaitGroup
+	doIncrement := func(name string, n int) {
+		for range n {
+			c.inc(name)
+		}
+	}
 
-	// Here we start 50 goroutines that each increment the counter 1000 times.
-    for range 50 {
-        wg.Go(func() {
-            for range 1000 {
+	// Several goroutines are ran concurrently below, with them all accessing the same container,
+	// with two accessing the same counter.
+	wg.Go(func() {
+		doIncrement("a", 10000)
+	})
 
-                ops.Add(1)
-            }
-        })
-    }
+	wg.Go(func() {
+		doIncrement("a", 10000)
+	})
 
-	// Call the wait group to block until all goroutines are done.
-    wg.Wait()
+	wg.Go(func() {
+		doIncrement("b", 10000)
+	})
 
-	// Here no goroutines are writing to ops, but using Load it's safe to atomically read
-	// a value even while other goroutines are atomically updating it.
-    fmt.Println("ops:", ops.Load())
+	wg.Wait()
+	fmt.Println(c.counters)
 }
