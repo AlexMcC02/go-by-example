@@ -1,43 +1,16 @@
 package main
 
-import (
-	"cmp"
-	"fmt"
-	"slices"
-)
+import "os"
 
-// There are times you'll want to sort a collection by something other than its natural order.
-// E.g. -- we want to sort strings by their length instead of alphabetically.
+// A panic typically means something went unexpectedly wrong. It is most useful to 'fail fast'
+// on errors that should NOT occur during normal operation, or that we haven't prepared to handle
+// in a more graceful way (by throwing and catching).
 
 func main() {
-	fruits := []string{"peach", "banana", "kiwi"}
+	panic("a problem") // When this panic fires, the other code will not be reached.
 
-	// We implement a comparison function for string lengths (cmp.Compare is helpful for this).
-	lenCmp := func(a, b string) int {
-		return cmp.Compare(len(a), len(b))
+	_, err := os.Create("tmp/file")
+	if err != nil {
+		panic(err)
 	}
-
-	// Now we can call slices.SortFunc with this custom comparison to sort fruits by name length.
-	slices.SortFunc(fruits, lenCmp)
-	fmt.Println(fruits)
-
-	// The same technique can be employed to sort a slice of custom values.
-	type Person struct {
-		name string
-		age int
-	}
-
-	people := []Person{
-		{name: "Jax", age: 37},
-		{name: "TJ", age: 25},
-		{name: "Alex", age: 72},
-	}
-
-	// This implementation sorts the custom type of Person by their age.
-	// For performance reasons, it may be desirable to pass my reference rather than value with a pointer.
-	slices.SortFunc(people,
-		func(a, b Person) int {
-			return cmp.Compare(a.age, b.age)
-		})
-	fmt.Println(people)
 }
