@@ -1,16 +1,42 @@
 package main
 
-import "os"
+import (
+    "fmt"
+    "os"
+)
 
-// A panic typically means something went unexpectedly wrong. It is most useful to 'fail fast'
-// on errors that should NOT occur during normal operation, or that we haven't prepared to handle
-// in a more graceful way (by throwing and catching).
+// Defer is used to ensure that a function call is preformed later in a program's execution.
+// This is usually done for the purposes of cleanup. Defer is usually done in place of a 
+// 'finally' block in other languages.
 
 func main() {
-	panic("a problem") // When this panic fires, the other code will not be reached.
 
-	_, err := os.Create("tmp/file")
-	if err != nil {
-		panic(err)
-	}
+	// Below is an example of creating, writing, and closing a file whilst taking advantage of defer.
+    f := createFile("/tmp/defer.txt")
+    defer closeFile(f)
+    writeFile(f)
+}
+
+func createFile(p string) *os.File {
+    fmt.Println("creating")
+    f, err := os.Create(p)
+    if err != nil {
+        panic(err)
+    }
+    return f
+}
+
+func writeFile(f *os.File) {
+    fmt.Println("writing")
+    fmt.Fprintln(f, "data")
+}
+
+// It is still important to check for errors when closing a file, even if it is a deferred function.
+func closeFile(f *os.File) {
+    fmt.Println("closing")
+    err := f.Close()
+
+    if err != nil {
+        panic(err)
+    }
 }
