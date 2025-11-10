@@ -1,42 +1,27 @@
 package main
 
-import (
-    "fmt"
-    "os"
-)
+import "fmt"
 
-// Defer is used to ensure that a function call is preformed later in a program's execution.
-// This is usually done for the purposes of cleanup. Defer is usually done in place of a 
-// 'finally' block in other languages.
+// Recover is a built-in function that allows you to recover from a panic.
+// A recover can stop a panic from aborting the program and let it continue with execution instead.
+
+// This function will panic.
+func mayPanic() {
+	panic("a problem")
+}
 
 func main() {
+	// Recover must be called within a deferred function.
+	// When the enclosing function panics, the defer will activate and a recover call within it will catch the panic.
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered. Error:\n", r)
+		}
+	}()
 
-	// Below is an example of creating, writing, and closing a file whilst taking advantage of defer.
-    f := createFile("/tmp/defer.txt")
-    defer closeFile(f)
-    writeFile(f)
-}
+	mayPanic()
 
-func createFile(p string) *os.File {
-    fmt.Println("creating")
-    f, err := os.Create(p)
-    if err != nil {
-        panic(err)
-    }
-    return f
-}
-
-func writeFile(f *os.File) {
-    fmt.Println("writing")
-    fmt.Fprintln(f, "data")
-}
-
-// It is still important to check for errors when closing a file, even if it is a deferred function.
-func closeFile(f *os.File) {
-    fmt.Println("closing")
-    err := f.Close()
-
-    if err != nil {
-        panic(err)
-    }
+	// This code won't run as mayPanic() will panic.
+	// The execution of main will cease at this point and resume in the deferred closure.
+	fmt.Println("After myPanic()")
 }
