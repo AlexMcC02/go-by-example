@@ -1,62 +1,54 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
+	"time"
 )
 
-// Go offers built-in support for XML and XML-like formats with
-// the encoding/xml package.
-
-// Plant will be mapped to XML. Here we use the special features of
-// the XML package: the XMLName field dictates the name of the
-// XML element representing this struct; id, attr means that if the
-// field is an XML attribute rather than a nested element.
-type Plant struct {
-	XMLName xml.Name `xml:"plant"`
-	Id int `xml:"id,attr"`
-	Name string `xml:"name"`
-	Origin []string `xml:"origin"`
-}
-
-func (p Plant) String() string {
-	return fmt.Sprintf("Plant id=%v, name=%v, origin=%v", p.Id, p.Name, p.Origin)
-}
+// Go offers extensive support for times and durations.
 
 func main() {
-	coffee := &Plant{Id: 27, Name: "Coffee"}
-	coffee.Origin = []string{"Ethiopia", "Brazil"}
+	p := fmt.Println
 
-	// Emit XML representing the plant, with MarshalIndent used to provide
-	// a human readable output.
-	out, _ := xml.MarshalIndent(coffee, " ", "  ")
-	fmt.Println(string(out))
+	// Getting the current time.
+	now := time.Now()
+	p(now)
 
-	// Explicit appending of an XML header.
-	fmt.Println(xml.Header + string(out))
+	// You can build a time struct by providing the year, month, day, etc.
+	// Times are ALWAYS associated with a timezone, here UTC is provided.
+	then := time.Date(
+		2009, 11, 17, 20, 34, 58, 651386237, time.UTC)
+	p(then)
 
-	// Unmarshal is used to parse a string of bytes with XML into a data
-	// structure. If the XML is malformed or cannot be mapped onto Plant, a
-	// descriptive error will be returned.
-	var p Plant
-	if err := xml.Unmarshal(out, &p); err != nil {
-		panic(err)
-	}
-	fmt.Println(p)
+	// You can extract the various componets of the time value as expected.
+	p(then.Year())
+	p(then.Month())
+	p(then.Day())
+	p(then.Hour())
+	p(then.Minute())
+	p(then.Second())
+	p(then.Nanosecond())
+	p(then.Location())
 
-	tomato := &Plant{Id: 81, Name: "Tomato"}
-	tomato.Origin = []string{"Mexico", "California"}
+	// Monday-Sunday is also available.
+	p(then.Weekday())
 
-	type Nesting struct {
-		XMLName xml.Name `xml:"nesting"`
-		Plants []*Plant `xml:"parent>child>plant"`
-	}
+	// These methods will compare two times.
+	p(then.Before(now))
+	p(then.After(now))
+	p(then.Equal(now))
 
-	// The parent>child>plant field tag tells the encoder to test
-	// all plants under <parent><child>.
-    nesting := &Nesting{}
-    nesting.Plants = []*Plant{coffee, tomato}
+	// The sub method returns a Duration representing the interval between two times.
+	diff := now.Sub(then)
+	p(diff)
 
-    out, _ = xml.MarshalIndent(nesting, " ", "  ")
-    fmt.Println(string(out))
+	// We can compute the length of the duration in various units.
+	p(diff.Hours())
+	p(diff.Minutes())
+	p(diff.Seconds())
+	p(diff.Nanoseconds())
+
+	// You can use Add to advance time.
+	p(then.Add(diff))
+	p(then.Add(-diff))
 }
