@@ -1,65 +1,111 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"regexp"
+    "encoding/json"
+    "fmt"
+    "os"
+    "strings"
 )
 
-// Go offers built-in support for regular expressions.
+// Go offers built-in support for JSON encoding and decoding, including to
+// and from built-in and custom data types.
+
+// We'll use these two structs to demonstrate encoding and decoding of custom
+// types below.
+type response1 struct {
+    Page   int
+    Fruits []string
+}
+
+type response2 struct {
+    Page   int      `json:"page"`
+    Fruits []string `json:"fruits"`
+}
 
 func main() {
-	
-	// This tests whether a pattern matches a string.
-	match, _ := regexp.MatchString("p([a-z]+)ch", "peach")
-	fmt.Println(match)
 
-	// Above a string pattern was used directly, but for other regexp tasks you'll
-	// need to compile an optimised Regexp struct.
-	r, _ := regexp.Compile("p([a-z]+)ch")
+	// Below are some examples of encoding basic data types to JSON.
+	// Note: fields must start with capital letters to be exported.
+    bolB, _ := json.Marshal(true)
+    fmt.Println(string(bolB))
 
-	// Matching for the presence of a string.
-	fmt.Println(r.MatchString("peach"))
-	
-	// Finds the match for the regexp.
-	fmt.Println(r.FindString("peach punch"))
+    intB, _ := json.Marshal(1)
+    fmt.Println(string(intB))
 
-	// Returns the start and indexes for the match instead of the matching text.
-	fmt.Println("idx:", r.FindStringIndex("peach peach"))
+    fltB, _ := json.Marshal(2.34)
+    fmt.Println(string(fltB))
 
-	// This function will include information about both the whole-pattern matches
-	// and the submatches within those matches.
-	fmt.Println(r.FindStringSubmatch("peach peach"))
+    strB, _ := json.Marshal("gopher")
+    fmt.Println(string(strB))
 
-	// This will return the indexes of the matches and submatches.
-	fmt.Println(r.FindStringSubmatchIndex("peach punch"))
+	// Here are some examples for slices are maps, which encode to
+	// JSON arrays and objects as you'd expect.
+    slcD := []string{"apple", "peach", "pear"}
+    slcB, _ := json.Marshal(slcD)
+    fmt.Println(string(slcB))
 
-	// The all variants of therse functions to apply to all matches
-	// in the input, not just the first.
-	fmt.Println(r.FindAllString("peach punch pinch", -1))
+    mapD := map[string]int{"apple": 5, "lettuce": 7}
+    mapB, _ := json.Marshal(mapD)
+    fmt.Println(string(mapB))
 
-	// Similar case as above.
-	fmt.Println("all:", r.FindAllStringSubmatchIndex(
-        "peach punch pinch", -1))
+	// The JSON package can automatically encode your custom data types.
+	// It will only include exported fields in the encoded output and will
+	// by default use those names as the JSON keys.
+    res1D := &response1{
+        Page:   1,
+        Fruits: []string{"apple", "peach", "pear"}}
+    res1B, _ := json.Marshal(res1D)
+    fmt.Println(string(res1B))
 
-	// Supplying a non-negative second argument will limit the 
-	// number of matches.
-	fmt.Println(r.FindAllString("peach punch pinch", 2))
+	// You can use tags on struct field declarations to custgomize the encoded
+	// JSON key names.
+    res2D := &response2{
+        Page:   1,
+        Fruits: []string{"apple", "peach", "pear"}}
+    res2B, _ := json.Marshal(res2D)
+    fmt.Println(string(res2B))
 
-	// In addition to strings, []byte arguments can be supplied instead.
-	fmt.Println(r.Match([]byte("peach")))
+	// Here is an example of a generic data structure.
+    byt := []byte(`{"num":6.13,"strs":["a","b"]}`)
 
-	// MustCompile makes it safer to make use of global variables for regular
-	// expressions, as it will panic instead of returning an error.
-	r = regexp.MustCompile("p([a-z]+)ch")
-    fmt.Println("regexp:", r)
+	// Here is the variable that will be used to store the decoded
+	// JSON data. This syntax will hold a map of strings to arbitray data types.
+    var dat map[string]interface{}
 
-	// The regexp package also enables the replacing of string subsets.
-	fmt.Println(r.ReplaceAllString("a peach", "<fruit>"))
+	// The decoding proper, with an appropriate error check.
+    if err := json.Unmarshal(byt, &dat); err != nil {
+        panic(err)
+    }
+    fmt.Println(dat)
 
-	// Finally, the Func variant allows you to transform the matched
-	// text within a given fujnction.
-	in := []byte("a peach")
-    out := r.ReplaceAllFunc(in, bytes.ToUpper)
-    fmt.Println(string(out))
+	// Type conversion.
+    num := dat["num"].(float64)
+    fmt.Println(num)
+
+	// Accessing nested data requires a series of conversions.
+    strs := dat["strs"].([]interface{})
+    str1 := strs[0].(string)
+    fmt.Println(str1)
+
+	// JSON can be decoded into custom data types.
+    str := `{"page": 1, "fruits": ["apple", "peach"]}`
+    res := response2{}
+    json.Unmarshal([]byte(str), &res)
+    fmt.Println(res)
+    fmt.Println(res.Fruits[0])
+
+	// Whereas in previous examples bytes and stgrings were used as intermediates
+	// between the data and JSON representation on standard out. We can also stream
+	// JSON encodings directly to os.Writers like os.Stdout or even HTTP response
+	// bodies.
+    enc := json.NewEncoder(os.Stdout)
+    d := map[string]int{"apple": 5, "lettuce": 7}
+    enc.Encode(d)
+
+	// Streaming reads from os.Readers like os.Stdin or HTTP request bodies is done with
+	// json.Decoder.
+    dec := json.NewDecoder(strings.NewReader(str))
+    res1 := response2{}
+    dec.Decode(&res1)
+    fmt.Println(res1)
 }
