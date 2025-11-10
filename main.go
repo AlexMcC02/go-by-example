@@ -1,86 +1,69 @@
 package main
 
 import (
-    "fmt"
-    "os"
+	"os"
+	"text/template"
 )
 
-type point struct {
-    x, y int
-}
-
-// Go offers a variety of string formatting options with the printf function.
+// Go offers built-in support for creating dynamic content or showing customised output to the user
+// with the text/tempalte package.
 
 func main() {
 
-	// Go offers several printing 'verbs' designed to format general Go values.
-	// E.g. the %v verb prints an instance of the point struct.
-    p := point{1, 2}
-    fmt.Printf("struct1: %v\n", p)
+	// Here a new template is created and its body is parsed from a string.
+	// Templates consist of a mix of a static text and actions enclosed {{...}}
+	// that can be used to dynamically insert content.
+	t1 := template.New("t1")
+	t1, err := t1.Parse("Value is {{.}}\n")
+	if err != nil {
+		panic(err)
+	}
 
-	// The %v+ variant includes the field names of the struct.
-    fmt.Printf("struct2: %+v\n", p)
+	// The template.Must function can be used to panic in case Parse returns an error.
+	t1 = template.Must(t1.Parse("Value: {{.}}\n"))
 
-	// The %#v variant includes a Go syntax representation of the value or
-	// the source code snippet that would produce the value.
-    fmt.Printf("struct3: %#v\n", p)
+	// By executing the template we generatge its text with specific values for its actions.
+	// Here the {{.}} action is replaced by the value passed as a parameter to Execute.
+	t1.Execute(os.Stdout, "some text")
+	t1.Execute(os.Stdout, 5)
+	t1.Execute(os.Stdout, []string {
+		"Go",
+		"Rust",
+		"C++",
+		"C#",
+	})
 
-	// %T prints the type of the value.
-    fmt.Printf("type: %T\n", p)
+	// Helper function that will be used later.
+	Create := func(name, t string) *template.Template {
+		return template.Must(template.New(name).Parse(t))
+	}
+	
+	// If the data is a struct, the {{.FieldName}} action is used to access it fields.
+	t2 := Create("t2", "Name: {{.Name}}\n")
+	t2.Execute(os.Stdout, struct {
+		Name string
+	}{"Jane Doe"})
 
-	// Example of formatting booleans.
-    fmt.Printf("bool: %t\n", true)
+	// A similar approach is used for maps.
+	t2.Execute(os.Stdout, map[string]string {
+		"Name": "Mickey Mouse",
+	})
 
-	// %d is used for standard base 10 formatting.
-    fmt.Printf("int: %d\n", 123)
+	// If/else provide conditional execution for templates.
+	// A value is considered 'false' if it's the default value for a type.
+	t3 := Create("t3",
+        "{{if . -}} yes {{else -}} no {{end}}\n")
+    t3.Execute(os.Stdout, "not empty")
+    t3.Execute(os.Stdout, "")
 
-	// %b prints a binary representation.
-    fmt.Printf("bin: %b\n", 14)
-
-	// %c prints the character corresponding to the given integer.
-    fmt.Printf("char: %c\n", 33)
-
-	// %x provides hex encoding.
-    fmt.Printf("hex: %x\n", 456)
-
-	// %f is used for standard floating point values.
-    fmt.Printf("float1: %f\n", 78.9)
-
-	// %e and %E format the float using scientific notation.
-    fmt.Printf("float2: %e\n", 123400000.0)
-    fmt.Printf("float3: %E\n", 123400000.0)
-
-	// %s is used for basic string formatting.
-    fmt.Printf("str1: %s\n", "\"string\"")
-
-	// %q can be used to allow the use of double quotes in strings.
-    fmt.Printf("str2: %q\n", "\"string\"")
-
-	// %x can also be used to render strings in base 16.
-    fmt.Printf("str3: %x\n", "hex this")
-
-	// %p can be used to print a representation of a pointer.
-    fmt.Printf("pointer: %p\n", &p)
-
-	// You can specify the width of a printed figure by placing a number before %d.
-    fmt.Printf("width1: |%6d|%6d|\n", 12, 345)
-
-	// You can apply the width.precision syntax as shown below for floats.
-    fmt.Printf("width2: |%6.2f|%6.2f|\n", 1.2, 3.45)
-
-	// By default numbers will be right justified, you can apply - flag to left justify instead.
-    fmt.Printf("width3: |%-6.2f|%-6.2f|\n", 1.2, 3.45)
-
-	// You may also want to control width when formatting strings.
-    fmt.Printf("width4: |%6s|%6s|\n", "foo", "b")
-
-	// Again the - flag is used to left justify.
-    fmt.Printf("width5: |%-6s|%-6s|\n", "foo", "b")
-
-	// Sprintf formats and returns a string without printing it.
-    s := fmt.Sprintf("sprintf: a %s", "string")
-    fmt.Println(s)
-
-	// You can format and print to io.Writers other than os.Stdout using Fprintf.
-    fmt.Fprintf(os.Stderr, "io: an %s\n", "error")
+	// Range blocks can be used for looping.
+	t4 := Create("t4",
+        "Range: {{range .}}{{.}} {{end}}\n")
+    t4.Execute(os.Stdout,
+        []string{
+            "Go",
+            "Rust",
+            "C++",
+            "C#",
+        })
 }
