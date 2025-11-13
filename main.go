@@ -1,80 +1,60 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
+    "bufio"
+    "fmt"
+    "os"
+    "path/filepath"
 )
 
-// Reading and writing files are basic tasks needed for many Go programs.
+// Writing files in go follows similar patterns to the one we saw
+// earlier for reading.
 
-// Reading files requires checking most calls for errors. This helper function
-// will streamline the process.
 func check(e error) {
-	if e != nil {
-		panic(e)
-	}
+    if e != nil {
+        panic(e)
+    }
 }
 
 func main() {
 
-	// The most basic file reading task involves dumping a file's entire contents
-	// into memory.
-	path := filepath.Join(os.TempDir(), "dat")
-	dat, err := os.ReadFile(path)
-	check(err)
-	fmt.Print(string(dat))
+	// To start, this is how to dump a string into a file.
+    d1 := []byte("hello\ngo\n")
+    path1 := filepath.Join(os.TempDir(), "dat1")
+    err := os.WriteFile(path1, d1, 0644)
+    check(err)
 
-	// You'll often want more control over how what parts of a file are read. For 
-	// these tasks, start by Openin a file to obtain an os.File value.
-	f, err := os.Open(path)
-	check(err)
+	// For more granular writes, open a file for writing.
+    path2 := filepath.Join(os.TempDir(), "dat2")
+    f, err := os.Create(path2)
+    check(err)
 
-	// Here we read some bytes from the beginning of the file. Allow up to 5 to be
-	// read but also note how many actually were read.
-	b1 := make([]byte, 5)
-	n1, err := f.Read(b1)
-	check(err)
-	fmt.Printf("%d bytes: %s\n", n1, string(b1[:n1]))
+	// It is idiomatic to close immediately after opening, using defer.
+    defer f.Close()
 
-	// You can also Seek to a known location in the file and Read from there.
-	o2, err := f.Seek(6, io.SeekStart)
-	check(err)
-	b2 := make([]byte, 2)
-	n2, err := f.Read(b2)
-	check(err)
-	fmt.Printf("%d bytes @ %d: ", n2, o2)
-	fmt.Printf("%v\n", string(b2[:n2]))
+	// Writing byte slices is quite straightforward.
+    d2 := []byte{115, 111, 109, 101, 10}
+    n2, err := f.Write(d2)
+    check(err)
+    fmt.Printf("wrote %d bytes\n", n2)
 
-	// Other methods of seeking are relative to the current cursor position.
-	_, err = f.Seek(2, io.SeekCurrent)
-	check(err)
+	// A WriteString is also available.
+    n3, err := f.WriteString("writes\n")
+    check(err)
+    fmt.Printf("wrote %d bytes\n", n3)
 
-	// And relative to the end of the file.
-	_, err = f.Seek(-4, io.SeekEnd)
-	check(err)
+	// Issue a Sync to flush writes to stable storage.
+    f.Sync()
 
-	// The io package provides some functions that may be helpful for file reading.
-	o3, err := f.Seek(6, io.SeekStart)
-	check(err)
-	b3 := make([]byte, 2)
-	n3, err := io.ReadAtLeast(f, b3, 2)
-	check(err)
-	fmt.Printf("%d bytes @ %d: %s\n", n3, o3, string(b3))
+	// Bufio provides buffered writers in addition to the buffered readers we
+	// saw earlier.
+    w := bufio.NewWriter(f)
+    n4, err := w.WriteString("buffered\n")
+    check(err)
+    fmt.Printf("wrote %d bytes\n", n4)
 
-	// There is no built-in rewind, but Seeking with an offset of 0 accomplishes this.
-	_, err = f.Seek(0, io.SeekStart)
-	check(err)
+	// Flush ensures all buffered operations have been applied to the underlying
+	// writer.
+    w.Flush()
 
-	// The bufio package implements a buffered reader that may be useful for its efficiency
-	// with many small reads and because of the additional reading methods it provides.
-	r4 := bufio.NewReader(f)
-	b4, err := r4.Peek(5)
-	check(err)
-	fmt.Printf("5 bytes: %s\n", string(b4))
-
-	// Always close a file when you're done (ideally implement this with a defer).
-	f.Close()
 }
