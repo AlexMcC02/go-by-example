@@ -1,52 +1,20 @@
 package main
 
 import (
+	"crypto/sha256" // Go implements several hash functions in various crypto/* packages.
 	"fmt"
-	"net"
-	"net/url"
 )
 
-// URLs provide a uniform way to locate resources.
+// SHA256 hashes are frequently used to compute short identities for
+// binary or text blobs. For example, TLS/SSL certificates use SHA256
+// to compute a certificate's signature.
 
 func main() {
-	
-	// We'll use this example URL for parsing.
-	// It includes a scheme, auth info, host, port, path, query params and fragment.
-	s := "postgres://user:pass@host.com:5432/path?k=v#f"
+	s := "The lands of colchis draw near..."
+	h := sha256.New() // New hash instance of SHA256.
+	h.Write([]byte(s)) // The Write function expects a bytes, here we use type coercion.
+	bs := h.Sum(nil) // This obtains the finalised hash result as a byte slice.
 
-	// Parsing the URL and ensure there are no errors.
-	u, err := url.Parse(s)
-	if err != nil {
-		panic(err)
-	}
-
-	// A simple dot syntax allows us to access parts of the scheme.
-	fmt.Println(u.Scheme)
-
-	// User contains all authentication info, here we call Username
-	// and Password on this for individual values.
-	fmt.Println(u.User)
-	fmt.Println(u.User.Username())
-	p, _ := u.User.Password()
-	fmt.Println(p)
-
-	// The Host contains both the hostname and the port, if present
-	// Use SplitHostPort to extract them.
-	fmt.Println(u.Host)
-	host, port, _ := net.SplitHostPort(u.Host)
-	fmt.Println(host)
-	fmt.Println(port)
-
-	// Here we extract the path and the fragment after the #.
-	fmt.Println(u.Path)
-	fmt.Println(u.Fragment)
-
-	// To get query params in the string of k=v format, use RawQuery.
-	// You can also parse query params into a map. The parsed query
-	// maps are from string to slices of strings, so index into [0]
-	// if you want only the first value.
-	fmt.Println(u.RawQuery)
-	m, _ := url.ParseQuery(u.RawQuery)
-	fmt.Println(m)
-	fmt.Println(m["k"][0])
+	fmt.Println(s) // Printing the original string.
+	fmt.Printf("%x\n", bs) // Printing the hashed output.
 }
