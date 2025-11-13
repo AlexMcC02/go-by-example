@@ -2,38 +2,37 @@ package main
 
 import (
 	"fmt"
-	"math/rand/v2"
+	"strconv"
 )
 
-// Go's math/rand/v2 package provides pseudorandom number generation.
+// Parsing numbers from strings is a simple, but common task.
+// The built-in package strconv provides the number parsing.
 
 func main() {
 
-	// For example, rand.IntN returns a random int n, 0 <= n < 100.
-	fmt.Print(rand.IntN(100), ",")
-	fmt.Print(rand.IntN(100))
-	fmt.Println()
+	// With ParseFloat, the 64 tells the program how many bits of
+	// precision to parse.
+	f, _ := strconv.ParseFloat("1.234", 64)
+	fmt.Println(f)
 
-	// rand.Float64 returns a float64 f, 0.0 <= f < 1.0
-	fmt.Println(rand.Float64())
+	// For ParseInt, the 0 means infer the base from the string,
+	// with 64 enforcing that the result fit within 64 bits.
+	i, _ := strconv.ParseInt("123", 0, 64)
+	fmt.Println(i)
 
-	fmt.Print((rand.Float64()*5)+5, ",")
-    fmt.Print((rand.Float64() * 5) + 5)
-    fmt.Println()
+	// ParseInt will recognise hex-formatted numbers.
+	d, _ := strconv.ParseInt("0x1c8", 0, 64)
+	fmt.Println(d)
 
-	// If you want a known seed, create a new rand.
-	// Source and pass it into the New constructir,
-	// NewPCG creates a new PCG source that requires a seed
-	// of two uint64 numbers.
-	s2 := rand.NewPCG(42, 1024)
-	r2 := rand.New(s2)
-	fmt.Print(r2.IntN(100), ",")
-	fmt.Print(r2.IntN(100))
-	fmt.Println()
+	// ParseUInt is available for specifically unsigned numbers.
+	u, _ := strconv.ParseUint("789", 0, 64)
+	fmt.Println(u)
 
-	s3 := rand.NewPCG(42, 1024)
-	r3 := rand.New(s3)
-	fmt.Print(r3.IntN(100), ",")
-	fmt.Print(r3.IntN(100))
-	fmt.Println()
+	// Atoi is a convenience function for basic base-10 int parsing.
+	k, _ := strconv.Atoi("135")
+	fmt.Println(k)
+
+	// Parse functions will return an error on bad input.
+	_, e := strconv.Atoi("wat")
+	fmt.Println(e)
 }
