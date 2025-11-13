@@ -2,37 +2,51 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	"net"
+	"net/url"
 )
 
-// Parsing numbers from strings is a simple, but common task.
-// The built-in package strconv provides the number parsing.
+// URLs provide a uniform way to locate resources.
 
 func main() {
+	
+	// We'll use this example URL for parsing.
+	// It includes a scheme, auth info, host, port, path, query params and fragment.
+	s := "postgres://user:pass@host.com:5432/path?k=v#f"
 
-	// With ParseFloat, the 64 tells the program how many bits of
-	// precision to parse.
-	f, _ := strconv.ParseFloat("1.234", 64)
-	fmt.Println(f)
+	// Parsing the URL and ensure there are no errors.
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
 
-	// For ParseInt, the 0 means infer the base from the string,
-	// with 64 enforcing that the result fit within 64 bits.
-	i, _ := strconv.ParseInt("123", 0, 64)
-	fmt.Println(i)
+	// A simple dot syntax allows us to access parts of the scheme.
+	fmt.Println(u.Scheme)
 
-	// ParseInt will recognise hex-formatted numbers.
-	d, _ := strconv.ParseInt("0x1c8", 0, 64)
-	fmt.Println(d)
+	// User contains all authentication info, here we call Username
+	// and Password on this for individual values.
+	fmt.Println(u.User)
+	fmt.Println(u.User.Username())
+	p, _ := u.User.Password()
+	fmt.Println(p)
 
-	// ParseUInt is available for specifically unsigned numbers.
-	u, _ := strconv.ParseUint("789", 0, 64)
-	fmt.Println(u)
+	// The Host contains both the hostname and the port, if present
+	// Use SplitHostPort to extract them.
+	fmt.Println(u.Host)
+	host, port, _ := net.SplitHostPort(u.Host)
+	fmt.Println(host)
+	fmt.Println(port)
 
-	// Atoi is a convenience function for basic base-10 int parsing.
-	k, _ := strconv.Atoi("135")
-	fmt.Println(k)
+	// Here we extract the path and the fragment after the #.
+	fmt.Println(u.Path)
+	fmt.Println(u.Fragment)
 
-	// Parse functions will return an error on bad input.
-	_, e := strconv.Atoi("wat")
-	fmt.Println(e)
+	// To get query params in the string of k=v format, use RawQuery.
+	// You can also parse query params into a map. The parsed query
+	// maps are from string to slices of strings, so index into [0]
+	// if you want only the first value.
+	fmt.Println(u.RawQuery)
+	m, _ := url.ParseQuery(u.RawQuery)
+	fmt.Println(m)
+	fmt.Println(m["k"][0])
 }
