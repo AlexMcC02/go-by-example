@@ -1,20 +1,30 @@
 package main
 
 import (
-	"crypto/sha256" // Go implements several hash functions in various crypto/* packages.
+	b64 "encoding/base64" // Aliasing a verbose immport.
 	"fmt"
 )
 
-// SHA256 hashes are frequently used to compute short identities for
-// binary or text blobs. For example, TLS/SSL certificates use SHA256
-// to compute a certificate's signature.
+// Go provides built-in support for base64 encoding/decoding.
 
 func main() {
-	s := "The lands of colchis draw near..."
-	h := sha256.New() // New hash instance of SHA256.
-	h.Write([]byte(s)) // The Write function expects a bytes, here we use type coercion.
-	bs := h.Sum(nil) // This obtains the finalised hash result as a byte slice.
+	data := "abc123!?$*&()'-=@~" // The string we'll encode and decode.
+	
+	// Go supports standard and URL-compatible base64. Here's how to
+	// encode using the standard encoder. The encoder rquires a []byte
+	// so we can convert our string to that type.
+	sEnc := b64.StdEncoding.EncodeToString([]byte(data))
+	fmt.Println(sEnc)
 
-	fmt.Println(s) // Printing the original string.
-	fmt.Printf("%x\n", bs) // Printing the hashed output.
+	// Decoding may return an error, which you can check if you don't
+	// already know if the input is well-formed.
+	sDec, _ := b64.StdEncoding.DecodeString(sEnc)
+	fmt.Println(string(sDec))
+	fmt.Println()
+
+	// This encodes/decodes using a URL-compatible base64 format.
+	uEnc := b64.URLEncoding.EncodeToString([]byte(data))
+	fmt.Println(uEnc)
+	uDec, _ := b64.URLEncoding.DecodeString(uEnc)
+	fmt.Println(string(uDec))
 }
