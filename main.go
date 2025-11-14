@@ -1,60 +1,31 @@
 package main
 
 import (
-    "bufio"
-    "fmt"
-    "os"
-    "path/filepath"
+	"os"
+	"fmt"
+	"bufio"
+	"strings"
 )
 
-// Writing files in go follows similar patterns to the one we saw
-// earlier for reading.
+// A line filter is a common type of program that reads input on stdin, process it,
+// and then prints some derived result to stdout. grep and sed are common line filters.
 
-func check(e error) {
-    if e != nil {
-        panic(e)
-    }
-}
-
+// This example has a line filter that writes a capitalised version of provided input text.
 func main() {
 
-	// To start, this is how to dump a string into a file.
-    d1 := []byte("hello\ngo\n")
-    path1 := filepath.Join(os.TempDir(), "dat1")
-    err := os.WriteFile(path1, d1, 0644)
-    check(err)
+	// Wrapping the unbuffered os.Stdin with a buffered scanner provides a convenient 
+	// Scan method that advances the scanner to the next token (the nextg line in the
+	// default scanner).
+	scanner := bufio.NewScanner(os.Stdin)
 
-	// For more granular writes, open a file for writing.
-    path2 := filepath.Join(os.TempDir(), "dat2")
-    f, err := os.Create(path2)
-    check(err)
+	for scanner.Scan() {
+		ucl := strings.ToUpper(scanner.Text())
+		fmt.Println(ucl)
+	}
 
-	// It is idiomatic to close immediately after opening, using defer.
-    defer f.Close()
-
-	// Writing byte slices is quite straightforward.
-    d2 := []byte{115, 111, 109, 101, 10}
-    n2, err := f.Write(d2)
-    check(err)
-    fmt.Printf("wrote %d bytes\n", n2)
-
-	// A WriteString is also available.
-    n3, err := f.WriteString("writes\n")
-    check(err)
-    fmt.Printf("wrote %d bytes\n", n3)
-
-	// Issue a Sync to flush writes to stable storage.
-    f.Sync()
-
-	// Bufio provides buffered writers in addition to the buffered readers we
-	// saw earlier.
-    w := bufio.NewWriter(f)
-    n4, err := w.WriteString("buffered\n")
-    check(err)
-    fmt.Printf("wrote %d bytes\n", n4)
-
-	// Flush ensures all buffered operations have been applied to the underlying
-	// writer.
-    w.Flush()
-
+	// Error check that gracefully exits the application.
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
 }
