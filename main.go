@@ -2,12 +2,13 @@ package main
 
 import (
     "fmt"
-    "io/fs"
     "os"
     "path/filepath"
 )
 
-// Go has several useful functions for working with directories in the file system.
+// Throughout program execution, we often want to create data that isn't needed
+// after the program exits. Temporary files are directories are useful for this
+// purpose since they do not pollute the file system over time.
 
 func check(e error) {
     if e != nil {
@@ -17,69 +18,33 @@ func check(e error) {
 
 func main() {
 
-	// Creating a new sub-directory in the current working directory.
-    err := os.Mkdir("subdir", 0755)
+    // Temporary files can be created with os.CreateTemp as illustrated below.
+    // The first arugment is the location, so "" is the current directory.
+    f, err := os.CreateTemp("", "sample")
     check(err)
 
-	// It's good practice to defer the removal of temporary directories.
-	// RemoveAll will not only remove a directory but its contents as well 
-	// like `rm -rf`.
-    defer os.RemoveAll("subdir")
+    // Temporary files are assigned a name based on the second argument provided
+    // for os.CreateTemp and the rest is chosen automatically to ensure that
+    // concurrent calls will always create different file names.
+    fmt.Println("Temp file name:", f.Name())
 
-	// Helper to create an empty file.
-    createEmptyFile := func(name string) {
-        d := []byte("")
-        check(os.WriteFile(name, d, 0644))
-    }
+    // Cleaning up the temporary file once we're done with it.
+    defer os.Remove(f.Name())
 
-    createEmptyFile("subdir/file1")
-
-	// We can create a hierarchy of directories, including parentsd with MkdirAll.
-	// This is simlar to `mkdir -p`.
-    err = os.MkdirAll("subdir/parent/child", 0755)
+    // Writing some data to the temporary file.
+    _, err = f.Write([]byte{1,2,3,4})
     check(err)
 
-    createEmptyFile("subdir/parent/file2")
-    createEmptyFile("subdir/parent/file3")
-    createEmptyFile("subdir/parent/child/file4")
-
-	// ReadDir lists directory contents, returning a slice of os.DirEntry objects.
-    c, err := os.ReadDir("subdir/parent")
+    // We can also create a temporary directory.
+    dname, err := os.MkdirTemp("", "sampledir")
     check(err)
+    fmt.Println("Temp dir name:", dname)
 
-    fmt.Println("Listing subdir/parent")
-    for _, entry := range c {
-        fmt.Println(" ", entry.Name(), entry.IsDir())
-    }
+    defer os.RemoveAll(dname)
 
-	// Now we'll see the contents of subdir/parent/child when listing the current
-	// directory.
-    err = os.Chdir("subdir/parent/child")
+    // Now we can synthesize temporary file names by prefixing them with the
+    // temporary directory.
+    fname := filepath.Join(dname, "file")
+    err = os.WriteFile(fname, []byte{1, 2}, 0666)
     check(err)
-
-    c, err = os.ReadDir(".")
-    check(err)
-
-    fmt.Println("Listing subdir/parent/child")
-    for _, entry := range c {
-        fmt.Println(" ", entry.Name(), entry.IsDir())
-    }
-
-	// cd back to where we started.
-    err = os.Chdir("../../..")
-    check(err)
-
-	// We can also visit a directory relcusively, including all its sub-directories.
-	// WalkDir attempts a callback function to handle every file or directory visited.
-    fmt.Println("Visiting subdir")
-    err = filepath.WalkDir("subdir", visit)
-}
-
-// visit is called for every file or directory found recursively by filepath.WalkDir.
-func visit(path string, d fs.DirEntry, err error) error {
-    if err != nil {
-        return err
-    }
-    fmt.Println(" ", path, d.IsDir())
-    return nil
 }
