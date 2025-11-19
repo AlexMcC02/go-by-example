@@ -1,33 +1,63 @@
 package main
 
-import "embed"
+import (
+    "fmt"
+    "testing"
+)
 
-// 'go:embed' is a compiler directive allowing programs to include
-// arbitrary files and folders in the Go binary at build time.
+// The testing package provides the tools we need to write unit tests, with
+// the `go test` command able to run them.
 
-// Embed directives accept paths relative to the directory containing
-// the Go source file. The directive embeds the contents of the file 
-// the string variable immediately following it.
+// As a rule of thumb, the test code will live alongside the code it is testing.
 
-//go:embed folder/single_file.txt
-var fileString string
-	
-//go:embed folder/single_file.txt
-var fileByte []byte
+// This is the function we'll use for the purpose of demonstration.
+func IntMin(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
 
-// You can embed multiple files (or folders) with wildcards.
+// A function becomes a test when its signature starts with 'Test'.
+func TestIntMinBasic(t *testing.T) {
+    ans := IntMin(2, - 2)
+    if ans != -2 {
+        t.Errorf("IntMin(2, -2) = %d; want -2", ans)
+    }
+}
 
-//go:embed folder/single_file.txt
-//go:embed folder/*.hash
-var folder embed.FS
+// Writing tests can become repetitive, so it is idomatic to make use of a
+// table-driven style, where test inputs and expected outputs are listed in
+// a table and a single look walks over them and performs the test logic.
+func TestIntMinTableDriven(t *testing.T) {
+    var tests = []struct {
+        a, b int
+        want int
+    }{
+        {0, 1, 0},
+        {1, 0, 0},
+        {2, -2, -2},
+        {0, -1, -1},
+        {-1, 0, -1},
+    }
 
-func main() {
-    print(fileString)
-    print(string(fileByte))
-    
-    content1, _ := folder.ReadFile("folder/file1.hash")
-    print(string(content1))
+    for _, tt := range tests {
+        testname := fmt.Sprintf("%d, %d", tt.a, tt.b)
+        t.Run(testname, func(t *testing.T) {
+            ans := IntMin(tt.a, tt.b)
+            if ans != tt.want {
+                t.Errorf("got %d, want %d", ans, tt.want)
+            }
+        })
+    }
+}
 
-    content2, _ := folder.ReadFile("folder/file2.hash")
-    print(string(content2))
+// Benchmark tests are used to ascertain the runtime of a piece of code, making
+// them useful to identify performance bottlenbecks. The loop will be executed
+// many times with an average returned to minimise moment-to-moment performance
+// fluctuations.
+func BenchmarkIntMin(b *testing.B) {
+    for b.Loop() {
+        IntMin(1, 2)
+    }
 }
