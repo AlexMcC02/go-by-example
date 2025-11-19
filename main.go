@@ -1,47 +1,26 @@
 package main
 
 import (
-    "flag"
     "fmt"
     "os"
+    "strings"
 )
 
-// Some CLI tools, like go or git have many subcommands, each with its own set
-// of flags. The flag package lets us easily define simple subcommands that have
-// their own flags.
+// Environment variables are a universal mechanism for conveying configuration
+// information to Unix programs.
 
 func main() {
 
-    // We declare a subcommand using the NewFlagSet function, and proceed to define
-    // new flags specific for this subcommand.
-    fooCmd := flag.NewFlagSet("foo", flag.ExitOnError)
-    fooEnable := fooCmd.Bool("enable", false, "enable")
-    fooName := fooCmd.String("name", "", "name")
+    // os.Setenv is used to set key/value pairs.
+    os.Setenv("FOO", "1")
+    fmt.Println("FOO:", os.Getenv("FOO"))
+    fmt.Println("BAR:", os.Getenv("BAR")) // This will return an empty string.
 
-    // For a different subcommand we can define different supported flags.
-    barCmd := flag.NewFlagSet("bar", flag.ExitOnError)
-    barLevel := barCmd.Int("level", 0, "level")
+    fmt.Println()
 
-    // The subcommand is expected as the first argument to the program.
-    if len(os.Args) < 2 {
-        fmt.Println("expected 'foo' or 'bar' subcommands")
-        os.Exit(1)
-    }
-
-    switch os.Args[1] {
-        case "foo":
-            fooCmd.Parse(os.Args[2:])
-            fmt.Println("subcommand 'foo'")
-            fmt.Println("  enable:", *fooEnable)
-            fmt.Println("  name:", *fooName)
-            fmt.Println("  tail:", fooCmd.Args())
-            case "bar":
-            barCmd.Parse(os.Args[2:])
-            fmt.Println("subcommand 'bar'")
-            fmt.Println("  level:", *barLevel)
-            fmt.Println("  tail:", barCmd.Args())
-        default:
-            fmt.Println("expected 'foo' or 'bar' subcommands")
-            os.Exit(1)
+    // os.Environ is used to obtain a list of all key/value pairs in the environment.
+    for _, e := range os.Environ() {
+        pair := strings.SplitN(e, "=", 2)
+        fmt.Println(pair[0])
     }
 }
