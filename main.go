@@ -2,23 +2,33 @@ package main
 
 import (
     "fmt"
-    "os"
+    "flag"
 )
 
-// Command-line arguments are a common way to parameterize execution of programs.
+// Command-line flags are a common means to specify options for CLI programs.
+// The flag package provides support for command line parsing.
 
 func main() {
 
-    // os.Args provide access to raw command-line arguments. Note that the first
-    // value in this slice is the path to the program, with os.Args[1:] holds the
-    // arguments to the program.
-    argswithProg := os.Args
-    argsWithoutProg := os.Args[1:]
+    // Basic flag decorations are available for string, integer, and boolean
+    // options. Note that the flag.String function will return a pointer,
+    // not a value.
+    wordPtr := flag.String("word", "foo", "a string")
+    numbPtr := flag.Int("numb", 42, "an int")
+    forkPtr := flag.Bool("fork", false, "a bool")
 
-    // Arguments can be accessed using an index.
-    arg := os.Args[3]
+    // It's also possible to declare an option that uses an existing var 
+    // declared elsewhere program. Note that we need to pass a pointer to
+    // the flag declaration function.
+    var svar string
+    flag.StringVar(&svar, "svar", "bar", "a string var")
 
-    fmt.Println(argswithProg)
-    fmt.Println(argsWithoutProg)
-    fmt.Println(arg)
+    // Flag parse is then called to execute the command-line parsing.
+    flag.Parse()
+
+    fmt.Println("word:", *wordPtr)
+    fmt.Println("numb:", *numbPtr)
+    fmt.Println("fork:", *forkPtr)
+    fmt.Println("svar:", svar)
+    fmt.Println("tail:", flag.Args())
 }
