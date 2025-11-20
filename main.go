@@ -1,42 +1,73 @@
 package main
 
 import (
+    "errors"
     "fmt"
-    "net/http"
-    "time"
+    "io"
+    "os/exec"
 )
 
-// In the prior example we looked at setting up a simple HTTP server. HTTP
-// servers are useful for demonstrating the usage of context.Context for 
-// controlling cancellation. A context carries deadlines, cancellation
-// signals, and other request-scoped values across API boundaries and
-// goroutines.
-
-func hello(w http.ResponseWriter, req *http.Request) {
-
-    // A context.Context is created for each requests by the net/http machinery,
-    // and is available with the Context() method.
-    ctx := req.Context()
-    fmt.Println("server: hello handler started")
-    defer fmt.Println("server: hello handler ended")
-
-    // Here we simulate work with a delay. We also keep an eye on the context's
-    // Done() channel for a singla that we should cancel the work and return immediately.
-    select {
-    case <-time.After(10 * time.Second):
-        fmt.Fprint(w, "hello\n")
-    case <-ctx.Done():
-
-        // The context's Err() method returns an error that explains why the Done()
-        // channel was closed.
-        err := ctx.Err()
-        fmt.Println("server:", err)
-        internalError := http.StatusInternalServerError
-        http.Error(w, err.Error(), internalError)
-    }
-}
+// There are times Go programs will need to spawn other processes.
 
 func main() {
-    http.HandleFunc("/hello", hello)
-    http.ListenAndServe(":8090", nil)
+
+    // We'll start with a simple command that takes no arguments or input
+    // and just prints something to stdout.
+    dateCmd := exec.Command("date")
+
+    // The Output method runs the command, waits for it to finish, and collects
+    // its standard output. If there are no errors, dateOut will hold bytes with
+    // the date info.
+    dateOut, err := dateCmd.Output()
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("> date")
+    fmt.Println(string(dateOut))
+
+    // Output and other methods of Command will return *exec.Error if there was
+    // a problem executing the command and *exec.ExitError if the command di run
+    // but exited with a non-zero return code.
+    _, err = exec.Command("date", "-x").Output()
+    if err != nil {
+        var execErr *exec.Error
+        var exitErr *exec.ExitError
+        switch {
+        case errors.As(err, &execErr):
+            fmt.Println("failed executing:", err)
+        case errors.As(err, &exitErr):
+            exitCode := exitErr.ExitCode()
+            fmt.Println("command exit rc =", exitCode)
+        default:
+            panic(err)
+        }
+    }
+
+    // Next we will look at a slightly more involved case where we pipe data to the
+    // external process on its stdin and collect the results from its stdout.
+    grepCmd := exec.Command("grep", "hello")
+
+    // Here we explicitly grab input/output pipes, start the process, write some
+    // input to it, read the resulting output, and finally wait for the process to exit.
+    grepIn, _ := grepCmd.StdinPipe()
+    grepOut, _ := grepCmd.StdoutPipe()
+    grepCmd.Start()
+    grepIn.Write([]byte("hello grep\ngoodbye grep"))
+    grepIn.Close()
+    grepBytes, _ := io.ReadAll(grepOut)
+    grepCmd.Wait()
+
+    fmt.Println("> grep hello")
+    fmt.Println(string(grepBytes))
+
+    // Note: when spawning commands you must provide an explicitly delineated
+    // command and argument array, rather than passing in a one command string.
+    lsCmd := exec.Command("bash", "-c", "ls -a -l -h")
+    lsOut, err := lsCmd.Output()
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("> ls -a -l -h")
+    fmt.Println(string(lsOut))
 }
