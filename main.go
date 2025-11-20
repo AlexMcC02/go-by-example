@@ -1,65 +1,42 @@
 package main
 
 import (
-    "bufio"
     "fmt"
-    "log"
-    "net"
-    "strings"
+    "net/http"
+    "time"
 )
 
-// The net package provides the tools we need to easily build TCP socket servers.
+// In the prior example we looked at setting up a simple HTTP server. HTTP
+// servers are useful for demonstrating the usage of context.Context for 
+// controlling cancellation. A context carries deadlines, cancellation
+// signals, and other request-scoped values across API boundaries and
+// goroutines.
 
-func main() {
+func hello(w http.ResponseWriter, req *http.Request) {
 
-    // net.Listen starts the server on the given network (TCP) and address
-    // (port 8090 on all interfaces).
-    listener, err := net.Listen("tcp", ":8090")
-    if err != nil {
-        log.Fatal("Error listening:", err)
-    }
+    // A context.Context is created for each requests by the net/http machinery,
+    // and is available with the Context() method.
+    ctx := req.Context()
+    fmt.Println("server: hello handler started")
+    defer fmt.Println("server: hello handler ended")
 
-    // Close the listener to free the portal when the application exits.
-    defer listener.Close()
+    // Here we simulate work with a delay. We also keep an eye on the context's
+    // Done() channel for a singla that we should cancel the work and return immediately.
+    select {
+    case <-time.After(10 * time.Second):
+        fmt.Fprint(w, "hello\n")
+    case <-ctx.Done():
 
-    // Loop indefinitely to accept new client connections.
-    for {
-
-        // Wait for a connection.
-        conn, err := listener.Accept()
-        if err != nil {
-            log.Println("Error accepting conn:", err)
-            continue
-        }
-
-        // A goroutine is employed to handle the connection such that the
-        // main loop can continue accepting more connections.
-        go handleConnection(conn)
+        // The context's Err() method returns an error that explains why the Done()
+        // channel was closed.
+        err := ctx.Err()
+        fmt.Println("server:", err)
+        internalError := http.StatusInternalServerError
+        http.Error(w, err.Error(), internalError)
     }
 }
 
-// handleConnection handles a single client connection, reading one line of
-// text from the client and returning a response.
-func handleConnection(conn net.Conn) {
-    
-    // Closing the connection releases resources when we are finished interactiong
-    // with the client.
-    defer conn.Close()
-
-    // Use bufio.NewReader to read one line of data from the client.
-    reader := bufio.NewReader(conn)
-    message, err := reader.ReadString('\n')
-    if err != nil {
-        log.Printf("Reader error: %v", err)
-        return
-    }
-
-    // Create and send a response back to the client, demonstrating
-    // two-way communication.
-    ackMsg := strings.ToUpper(strings.TrimSpace(message))
-    response := fmt.Sprintf("ACK: %s\n", ackMsg)
-    _, err = conn.Write([]byte(response))
-    if err != nil {
-        log.Printf("Server write error: %v", err)
-    }
+func main() {
+    http.HandleFunc("/hello", hello)
+    http.ListenAndServe(":8090", nil)
 }
