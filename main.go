@@ -1,41 +1,65 @@
 package main
 
 import (
+    "bufio"
     "fmt"
-    "net/http"
+    "log"
+    "net"
+    "strings"
 )
 
-// A fundamental concept in net/http servers is handlers. A handler is an
-// object implementing the http.Handler interface. A common way to write
-// handlers is by using the http.HandlerFunc adapter on functions with the
-// appropriate signature.
-func hello(w http.ResponseWriter, req *http.Request) {
-    
-    // Functions serving as ahandlers take a http.RequestWriter and a
-    // http.Request as arguments. The response writer is used to fill in the
-    // HTTP response.
-    fmt.Fprintf(w, "hello\n")
-}
-
-// This handler reads all the HTTP requst headers and echoes them into the
-// response body.
-func headers(w http.ResponseWriter, req *http.Request) {
-    for name, headers := range req.Header {
-        for _, h := range headers {
-            fmt.Fprintf(w, "%v: %v\n", name, h)
-        }
-    }
-}
+// The net package provides the tools we need to easily build TCP socket servers.
 
 func main() {
 
-    // We register our handlers on server routes using the http.HandleFunc
-    // convenience function. It sets up the default router in the net/http
-    // package and takes a function as an argument.
-    http.HandleFunc("/hello", hello)
-    http.HandleFunc("/headers", headers)
+    // net.Listen starts the server on the given network (TCP) and address
+    // (port 8090 on all interfaces).
+    listener, err := net.Listen("tcp", ":8090")
+    if err != nil {
+        log.Fatal("Error listening:", err)
+    }
 
-    // Finally, we call the ListenAndServe with the report and a handler.
-    // Supplying nil as the second argument tells it to use the default router.
-    http.ListenAndServe(":8090", nil)
+    // Close the listener to free the portal when the application exits.
+    defer listener.Close()
+
+    // Loop indefinitely to accept new client connections.
+    for {
+
+        // Wait for a connection.
+        conn, err := listener.Accept()
+        if err != nil {
+            log.Println("Error accepting conn:", err)
+            continue
+        }
+
+        // A goroutine is employed to handle the connection such that the
+        // main loop can continue accepting more connections.
+        go handleConnection(conn)
+    }
+}
+
+// handleConnection handles a single client connection, reading one line of
+// text from the client and returning a response.
+func handleConnection(conn net.Conn) {
+    
+    // Closing the connection releases resources when we are finished interactiong
+    // with the client.
+    defer conn.Close()
+
+    // Use bufio.NewReader to read one line of data from the client.
+    reader := bufio.NewReader(conn)
+    message, err := reader.ReadString('\n')
+    if err != nil {
+        log.Printf("Reader error: %v", err)
+        return
+    }
+
+    // Create and send a response back to the client, demonstrating
+    // two-way communication.
+    ackMsg := strings.ToUpper(strings.TrimSpace(message))
+    response := fmt.Sprintf("ACK: %s\n", ackMsg)
+    _, err = conn.Write([]byte(response))
+    if err != nil {
+        log.Printf("Server write error: %v", err)
+    }
 }
