@@ -1,58 +1,34 @@
 package main
 
 import (
-    "bytes"
+    "bufio"
     "fmt"
-    "log"
-    "os"
-    "log/slog"
+    "net/http"
 )
 
-// The go standard library provides straightforward tools for outputting logs
-// from Go programs, with the log package for free-form output and the log/slog
-// package for structured output.
+// The Go standard library comes with excellent support for HTTP clients and 
+// servers in the net/http package.
 
 func main() {
 
-    // Println makes use of the standard logger.
-    log.Println("standard logger")
-    
-    // Loggers can be configured with flags to set their output format. By default
-    // the standard logger has the log.Ldate and log.Ltime flags set, and these are
-    // collected in log.LstdFlags.
-    log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-    log.Println("with micro")
+    // Here we issue an HTTP GET request to a server. http.Get is a convenient
+    // shortcut around creating an http.Client object and calling its Get method,
+    // with it invoking a http.DefaultClient object that contains sensible defaults.
+    resp, err := http.Get("https://gobyexample.com")
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
 
-    // You can also emit the file name and line from which the log function is called.
-    log.SetFlags(log.LstdFlags | log.Lshortfile)
-    log.Println("with file/line")
+    fmt.Println("Response status:", resp.Status)
 
-    // You can also create a custom logger and pass it around. When doing so, you can
-    // set a prefix to distinguish its output from other loggers.
-    mylog := log.New(os.Stdout, "my:", log.LstdFlags)
-    mylog.Println("from mylog")
+    // Here we output the first five lines of the response body.
+    scanner := bufio.NewScanner(resp.Body)
+    for i := 0; scanner.Scan() && i < 5; i++ {
+        fmt.Println(scanner.Text())
+    }
 
-    // We can also set a prefix for existing loggers.
-    mylog.SetPrefix("ohmy:")
-    mylog.Println("from mylog")
-
-    // Loggers can have custom output argets; any io.Writer works.
-    var buf bytes.Buffer
-    buflog := log.New(&buf, "buf:", log.LstdFlags)
-
-    // This call writes the log output into buf.
-    buflog.Println("hello")
-
-    // This will actually show on standard output.
-    fmt.Print("from buflog:", buf.String())
-
-    // In addition to the message, slog output can contain an arbitrary number
-    // of key=value pairs.
-    jsonHandler := slog.NewJSONHandler(os.Stderr, nil)
-    myslog := slog.New(jsonHandler)
-    myslog.Info("hi there")
-    
-    // Sample output; the date and time emitted will depend on when the
-    // example run.
-    myslog.Info("hello again", "key", "val", "age", 25)
+    if err := scanner.Err(); err != nil {
+        panic(err)
+    }
 }
