@@ -1,35 +1,38 @@
 package main
 
 import (
+    "fmt"
     "os"
-    "os/exec"
+    "os/signal"
     "syscall"
 )
 
-// There may be cases we want to replace the current Go process with a new one,
-// to do this we use go's implementation of the exec function.
+// There are times when you want a Go program to intelligently handle Unix signals.
 
 func main() {
 
-    // Go requires an absolute path to the binary we want to execute, so we use
-    // exec.LookPath to find it.
-    binary, lookErr := exec.LookPath("ls")
-    if lookErr != nil {
-        panic(lookErr)
-    }
+    // Go signal notification works by sending os.Signal values on a chnnel. Note that
+    // the channel we've created here is buffered.
+    sigs := make(chan os.Signal, 1)
 
-    // Exec requires arguments in slice form (as opposed to one big string).
-    // We'll give ls a few common arguments.
-    // Note: the first argument should be the program name.
-    args := []string{"ls", "-a", "-l", "-h"}
-    
-    // Exec also requires certain environment variables.
-    env := os.Environ()
+    // signal.Notify registers the given channel to receive notifications of the
+    // specified signals.
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-    // Here's the actual syscall.Exec call. If successfuly, the execution of
-    // our process will end and be replaced by the newly created process.
-    execErr := syscall.Exec(binary, args, env)
-    if execErr != nil {
-        panic(execErr)
-    }
+    // Below demonstrates how receives can be received from a separate goroutine.
+    done := make(chan bool, 1)
+
+    // This goroutine executes a blocking receive for signals. When it gets one
+    // it'll print it out then notify the program it can finish.
+    go func() {
+        sig := <-sigs
+        fmt.Println()
+        fmt.Println(sig)
+        done <- true
+    }()
+
+    // The program will wait until it gets the expected signal before exiting.
+    fmt.Println("awaiting signal")
+    <-done
+    fmt.Println("exiting")
 }
